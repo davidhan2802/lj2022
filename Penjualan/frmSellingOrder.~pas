@@ -1,0 +1,737 @@
+unit frmSellingOrder;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ExtCtrls, StdCtrls, RzCmboBx, Mask, RzEdit, RzPanel,
+  AdvSmoothButton, Grids, DBGrids, RzDBGrid, DateUtils, RzLabel, ExtDlgs, JPEG,
+  RzStatus, RzButton, RzRadChk;
+
+type
+  TfrmSellOrder = class(TForm)
+    PanelSell: TRzPanel;
+    RzPanel2: TRzPanel;
+    SellLblCaption: TRzLabel;
+    RzStatusPane1: TRzStatusPane;
+    RzLabel9: TRzLabel;
+    SellLblGrandTotal: TRzLabel;
+    RzPanel1: TRzPanel;
+    RzLabel11: TRzLabel;
+    SellBtnAdd: TAdvSmoothButton;
+    RzLabel12: TRzLabel;
+    SellBtnDel: TAdvSmoothButton;
+    RzLabel14: TRzLabel;
+    SellTxtPembayaran: TRzComboBox;
+    RzPanel3: TRzPanel;
+    RzLabel13: TRzLabel;
+    SellTxtNo: TRzEdit;
+    RzLabel15: TRzLabel;
+    SellTxtTgl: TRzDateTimeEdit;
+    PenjualanDBGrid: TRzDBGrid;
+    RzPanel4: TRzPanel;
+    RzLabel1: TRzLabel;
+    SellTxtSubTotal: TRzNumericEdit;
+    RzLabel2: TRzLabel;
+    SellTxtPPN: TRzNumericEdit;
+    RzLabel3: TRzLabel;
+    SellTxtTotal: TRzNumericEdit;
+    SellTxtDisc: TRzNumericEdit;
+    RzLabel4: TRzLabel;
+    RzLabel5: TRzLabel;
+    SellTxtDiscRp: TRzNumericEdit;
+    RzLabel6: TRzLabel;
+    SellTxtGrandTotal: TRzNumericEdit;
+    RzPanel5: TRzPanel;
+    RzLabel7: TRzLabel;
+    SellTxtKembali: TRzNumericEdit;
+    SellTxtCetak: TRzCheckBox;
+    SellPanelCredit: TRzPanel;
+    RzLabel16: TRzLabel;
+    SellTxtTempo: TRzDateTimeEdit;
+    RzLabel10: TRzLabel;
+    SellTxtDibayar: TRzNumericEdit;
+    SellLblNoCredit: TRzLabel;
+    SellTxtNoCredit: TRzEdit;
+    RzLabel18: TRzLabel;
+    cbxP1: TRzCheckBox;
+    cbxP2: TRzCheckBox;
+    SellTxtSales: TRzEdit;
+    RzPanel7: TRzPanel;
+    RzLabel20: TRzLabel;
+    sellTxtalamat: TRzMemo;
+    SellTxtCustomer: TRzEdit;
+    RzGroupBox1: TRzGroupBox;
+    mem_notes: TRzMemo;
+    procedure FormShow(Sender: TObject);
+    procedure SellBtnAddClick(Sender: TObject);
+    procedure SellBtnDelClick(Sender: TObject);
+    procedure PenjualanDBGridKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure SellTxtPPNChange(Sender: TObject);
+    procedure SellTxtDiscChange(Sender: TObject);
+    procedure SellTxtDibayarChange(Sender: TObject);
+    procedure SellTxtPembayaranChange(Sender: TObject);
+    procedure SellTxtTempoChange(Sender: TObject);
+  private
+    oldTotal: Double;
+    procedure FillCombo;
+    procedure ClearForm;
+    procedure InsertDataMaster;
+    procedure UpdateData;
+    procedure CekMaxStock;
+    procedure CalculateSell;
+    procedure CalculateGridSell;
+    procedure PostingJual(Faktur: string);
+    { Private declarations }
+  public
+    SubTotal : Double;
+    CetakFaktur,vkodecust,vkodesales,valamat,vkota: string;
+    vidcust : integer;
+    { Public declarations }
+  end;
+
+var
+  frmSellOrder: TfrmSellOrder;
+
+implementation
+
+uses uMain, SparePartFunction, Data, DB, frmSearchProduct, Math,
+  StrUtils, frmhistorybuysell, frmSearchCust;
+
+{$R *.dfm}
+
+procedure TfrmSellOrder.CekMaxStock;
+begin
+  if (DataModule1.ZQryFormSellOrder.State <> dsInsert) or (DataModule1.ZQryFormSellOrder.State <> dsEdit) then
+    DataModule1.ZQryFormSellOrder.Edit;
+  with DataModule1.ZQryFunction do
+  begin
+    Close;
+    SQL.Clear;
+    SQL.Add('select UT from product');
+    SQL.Add('where kode = ' + QuotedStr(DataModule1.ZQryFormSellOrderkode.Value));
+    Open;
+    if DataModule1.ZQryFormSellOrderquantity.AsInteger > DataModule1.ZQryFunction.Fields[0].AsInteger then
+    begin
+      WarningDialog('Jumlah Stock Maksimum adalah ' + Fields[0].AsString);
+//      DataModule1.ZQryFormSellOrderquantity.AsInteger := DataModule1.ZQryFunction.Fields[0].AsInteger;
+    end;
+  end;
+end;
+
+procedure TfrmSellOrder.CalculateSell;
+begin
+    SellTxtTotal.Value := SellTxtSubTotal.Value - SellTxtPPN.Value;
+    SellTxtGrandTotal.Value := SellTxtTotal.Value - SellTxtDiscRp.Value;
+    SellLblGrandTotal.Caption := FormatCurr('Rp ###,##0',SellTxtGrandTotal.Value);
+    SellTxtKembali.Value := SellTxtDibayar.Value - SellTxtGrandTotal.Value;
+    if SellTxtKembali.Value<0 then SellTxtKembali.Value:=0;
+end;
+
+procedure TfrmSellOrder.CalculateGridSell;
+begin
+{    if PenjualanDBGrid.Fields[12].AsInteger=0 then
+    begin
+     if PenjualanDBGrid.Fields[13].AsFloat <> 0 then SubTotal := SubTotal - PenjualanDBGrid.Fields[13].AsFloat;
+
+     PenjualanDBGrid.Fields[7].AsInteger := PenjualanDBGrid.Fields[4].AsInteger * PenjualanDBGrid.Fields[5].AsInteger;
+     PenjualanDBGrid.Fields[10].AsFloat := (PenjualanDBGrid.Fields[7].AsFloat * PenjualanDBGrid.Fields[8].AsFloat * 0.01)+((PenjualanDBGrid.Fields[7].AsFloat - (PenjualanDBGrid.Fields[7].AsFloat * PenjualanDBGrid.Fields[8].AsFloat * 0.01)) * PenjualanDBGrid.Fields[9].AsFloat * 0.01);
+     PenjualanDBGrid.Fields[13].AsFloat := PenjualanDBGrid.Fields[7].AsFloat - PenjualanDBGrid.Fields[10].AsFloat;
+
+     PenjualanDBGrid.Fields[11].AsString := formatfloat(',0;(,0)',PenjualanDBGrid.Fields[13].AsFloat);
+    end
+    else if PenjualanDBGrid.Fields[12].AsInteger>0 then
+    begin
+     PenjualanDBGrid.Fields[7].Asfloat := 0;
+     PenjualanDBGrid.Fields[8].Asfloat := 0;
+     PenjualanDBGrid.Fields[9].Asfloat := 0;
+     PenjualanDBGrid.Fields[10].Asfloat := 0;
+     PenjualanDBGrid.Fields[13].Asfloat := 0;
+
+     if PenjualanDBGrid.Fields[12].Asinteger=1 then PenjualanDBGrid.Fields[11].AsString := 'FREE'
+     else if PenjualanDBGrid.Fields[12].Asinteger=2 then PenjualanDBGrid.Fields[11].AsString := 'TUKAR';
+    end;
+
+    SubTotal := SubTotal + PenjualanDBGrid.Fields[13].AsFloat;
+}
+
+  if (DataModule1.ZQryFormSellOrder.State <> dsInsert) or (DataModule1.ZQryFormSellOrder.State <> dsEdit) then
+    DataModule1.ZQryFormSellOrder.Edit;
+
+    if DataModule1.ZQryFormSellOrderidstts.AsInteger =0 then
+    begin
+     if DataModule1.ZQryFormSellOrdersubtotal.AsFloat <> 0 then SubTotal := SubTotal - DataModule1.ZQryFormSellOrdersubtotal.AsFloat;
+
+     DataModule1.ZQryFormSellOrdertotalharga.AsInteger := DataModule1.ZQryFormSellOrderharga.AsInteger * DataModule1.ZQryFormSellOrderquantity.AsInteger;
+     DataModule1.ZQryFormSellOrderdiskonrp.AsFloat := (DataModule1.ZQryFormSellOrdertotalharga.AsFloat * DataModule1.ZQryFormSellOrderdiskon.AsFloat * 0.01)+((DataModule1.ZQryFormSellOrdertotalharga.AsFloat - (DataModule1.ZQryFormSellOrdertotalharga.AsFloat * DataModule1.ZQryFormSellOrderdiskon.AsFloat * 0.01)) * DataModule1.ZQryFormSellOrderdiskon2.AsFloat * 0.01);
+     DataModule1.ZQryFormSellOrdersubtotal.AsFloat := DataModule1.ZQryFormSellOrdertotalharga.AsFloat - DataModule1.ZQryFormSellOrderdiskonrp.AsFloat;
+
+     DataModule1.ZQryFormSellOrdervsubtotal.AsString := formatfloat(',0;(,0)',DataModule1.ZQryFormSellOrdersubtotal.AsFloat);
+    end
+    else if DataModule1.ZQryFormSellOrderidstts.AsInteger>0 then
+    begin
+     DataModule1.ZQryFormSellOrdertotalharga.Asfloat := 0;
+     DataModule1.ZQryFormSellOrderdiskon.Asfloat := 0;
+     DataModule1.ZQryFormSellOrderdiskon2.Asfloat := 0;
+     DataModule1.ZQryFormSellOrderdiskonrp.Asfloat := 0;
+     DataModule1.ZQryFormSellOrdersubtotal.Asfloat := 0;
+
+     if DataModule1.ZQryFormSellOrderidstts.Asinteger=1 then DataModule1.ZQryFormSellOrdervsubtotal.AsString := 'FREE'
+     else if DataModule1.ZQryFormSellOrderidstts.Asinteger=2 then DataModule1.ZQryFormSellOrdervsubtotal.AsString := 'TUKAR';
+    end;
+
+    SubTotal := SubTotal + DataModule1.ZQryFormSellOrdersubtotal.AsFloat;
+    SellTxtSubTotal.Value := SubTotal;
+    CalculateSell;
+end;
+
+procedure TfrmSellOrder.PostingJual(Faktur: string);
+var
+  FakturBaru,idTrans,GrandTotal,typebayar,totpayment: string;
+  islunas: integer;
+begin
+  with frMain do
+  begin
+    ///Ganti No Faktur temp dengan yang asli...
+    ///Format NO FAKTUR TEMP : MSyy/MM/dd-hhmmss
+    ///Format NO FAKTUR ASLI : MSP/Tahun 2 digit/Bulan 2 Digit disambung kode urut (MSP/09/110001)
+    with DataModule1.ZQrySearch do
+    begin
+      FakturBaru := Faktur;
+      frmSellOrder.CetakFaktur := FakturBaru;
+
+      Close;
+      SQL.Clear;
+      SQL.Add('select * from sellorder');
+      SQL.Add('where faktur = ''' + Faktur + '''');
+      Open;
+
+      idTrans := FieldByName('idSell').AsString;
+      if idTrans = '' then idTrans := '0';
+      islunas := FieldByName('lunas').AsInteger;
+      totpayment := FieldByName('totalpayment').AsString;
+      typebayar  := FieldByName('pembayaran').AsString;
+      GrandTotal := FieldByName('grandtotal').AsString;
+    end;
+
+    with DataModule1.ZQryFunction do
+    begin
+      Close;
+      SQL.Clear;
+      SQL.Add('update sellorder set');
+      SQL.Add('isposted = ''' + '1' + ''' ');
+      SQL.Add('where faktur = ''' + Faktur + '''');
+      ExecSQL;
+
+      ///Input Inventory
+{      Close;
+      SQL.Clear;
+      SQL.Add('insert into inventory ');
+      SQL.Add('(kodebrg,qty,satuan,faktur,typetrans,idTrans,tglTrans,kodeGudang) ');
+      SQL.Add('select kode,(quantity * -1),satuan,faktur,''penjualan'','''+idTrans+''',''' + FormatDateTime('yyyy-MM-dd',TglSkrg) + ''',''' + KodeGudang + ''' from selldetail ');
+      SQL.Add('where faktur = ''' + FakturBaru + '''');
+      ExecSQL;      }
+
+      ///Input Operasional
+  {    if (typebayar = 'TUNAI')or(typebayar = 'BG') then
+      begin
+        Close;
+        SQL.Clear;
+        SQL.Add('insert into operasional');
+        SQL.Add('(idTrans,faktur,tanggal,waktu,kasir,kategori,keterangan,debet) values');
+        SQL.Add('(''' + idTrans + ''',');
+        SQL.Add('''' + FakturBaru + ''',');
+        SQL.Add('''' + FormatDateTime('yyyy-MM-dd',TglSkrg) + ''',');
+        SQL.Add('''' + FormatDateTime('hh:mm:ss',Now) + ''',');
+        SQL.Add('''' + UserName + ''',');
+        SQL.Add('''' + 'PENJUALAN' + ''',');
+        if islunas=1 then SQL.Add('''' + 'LUNAS ' + ''',')
+        else SQL.Add('''' + 'DP ' + ''',');
+        SQL.Add('''' + totpayment + ''')');
+        ExecSQL;
+      end;       }
+
+      LogInfo(UserName,'Posting transaksi order penjualan, no faktur : ' + FakturBaru + ', nilai transaksi:' + GrandTotal);
+      InfoDialog('Faktur ' + Faktur + ' berhasil diposting !');
+    end;
+  end;
+end;
+
+procedure TfrmSellOrder.FillCombo;
+begin
+  ipcomp := getComputerIP;
+
+  DataModule1.ZQryFormSellOrder.Close;
+  DataModule1.ZQryFormSellOrder.SQL.Text := 'select * from formsellorder where ipv='+ Quotedstr(ipcomp) + ' order by kode ';
+
+
+  cbxP1.Checked := false;
+  cbxP2.Checked := false;
+end;
+
+procedure TfrmSellOrder.ClearForm;
+begin
+  SellTxtCetak.Checked := false;
+
+  ClearTabel('formsellorder where ipv='+Quotedstr(ipcomp));
+  RefreshTabel(DataModule1.ZQryFormSellOrder);
+
+  SellTxtNo.Text :=  'LJ' + FormatDateTime('yy/MM/dd-hhmmss',Now);
+  SellTxtTgl.Date := TglSkrg;
+  SellLblGrandTotal.Caption := 'Rp 0';
+  SellTxtSubTotal.Value := 0;
+  SellTxtPPN.Value := 0;
+  SellTxtTotal.Value := 0;
+  SellTxtDisc.Value := 0;
+  SellTxtDiscRp.Value := 0;
+  SellTxtGrandTotal.Value := 0;
+  SellTxtPembayaran.ItemIndex := 1;
+  SellTxtDibayar.Value := 0;
+  SellTxtKembali.Value := 0;
+  SellTxtNoCredit.Clear;
+  SellTxtTempo.Date := incday(TglSkrg,30);
+  SellTxtPembayaranchange(SellTxtPembayaran);
+
+  vidcust := -1;
+  vkodecust := '';
+  valamat := '';
+  vkota   := '';
+  SellTxtCustomer.Text := '';
+  sellTxtalamat.Text :='';
+
+  vkodesales := '';
+  SellTxtSales.Text := '';
+
+  mem_notes.Text := '';
+
+  SellTxtCustomer.SetFocus;
+  SubTotal := 0;
+end;
+
+procedure TfrmSellOrder.InsertDataMaster;
+var idTrans: string;
+begin
+  with DataModule1.ZQryFunction do
+  begin
+    Close;
+    SQL.Clear;
+    SQL.Add('insert into sellorder');
+    SQL.Add('(faktur,tanggal,waktu,kasir,IDcustomer,kodecustomer,customer,alamat,kota,');
+    SQL.Add('pembayaran,nogiro,tgljatuhtempo,subtotal,ppn,total,diskon,diskonrp,');
+    SQL.Add('grandtotal,bayar,kembali,kodesales,namasales,totalpayment,notes,isposted,lunas) values');
+    SQL.Add('(''' + SellTxtNo.Text + ''',');
+    SQL.Add('''' + FormatDateTime('yyyy-MM-dd',SellTxtTgl.Date) + ''',');
+    SQL.Add('''' + FormatDateTime('hh:mm:ss',Now) + ''',');
+    SQL.Add(QuotedStr(UserName) + ',');
+    SQL.Add(QuotedStr(Inttostr(vIDcust)) + ',');
+    SQL.Add(QuotedStr(vkodecust) + ',');
+    SQL.Add(QuotedStr(SellTxtCustomer.Text) + ',');
+    SQL.Add(QuotedStr(valamat) + ',');
+    SQL.Add(QuotedStr(vkota) + ',');
+    SQL.Add('''' + SellTxtPembayaran.Text + ''',');
+    SQL.Add('''' + SellTxtNoCredit.Text + ''',');
+    SQL.Add('''' + FormatDateTime('yyyy-MM-dd',SellTxtTempo.Date) + ''',');
+    SQL.Add('''' + FloatToStr(SellTxtSubTotal.Value) + ''',');
+    SQL.Add('''' + FloatToStr(SellTxtPPN.Value) + ''',');
+    SQL.Add('''' + FloatToStr(SellTxtTotal.Value) + ''',');
+    SQL.Add('''' + AnsiReplaceText(FloatToStr(SellTxtDisc.Value),',','.') + ''',');
+    SQL.Add('''' + FloatToStr(SellTxtDiscRp.Value) + ''',');
+    SQL.Add('''' + FloatToStr(SellTxtGrandTotal.Value) + ''',');
+    SQL.Add('''' + FloatToStr(SellTxtDibayar.Value) + ''',');
+    SQL.Add('''' + FloatToStr(SellTxtKembali.Value) + ''',');
+    SQL.Add(QuotedStr(vKodesales) + ',');
+    SQL.Add(QuotedStr(SellTxtSales.Text) + ',');
+    SQL.Add('''' + FloatToStr(SellTxtDibayar.Value - SellTxtKembali.Value) + ''',');
+    SQL.Add(QuotedStr(mem_notes.Text) + ',');
+    SQL.Add('''' + '1' + ''',');
+    if (SellTxtDibayar.Value - SellTxtKembali.Value)>=SellTxtGrandTotal.Value then
+      SQL.Add('''' + '1' + ''')')
+    else
+      SQL.Add('''' + '0' + ''')');
+    ExecSQL;
+
+    Close;
+    SQL.Clear;
+    SQL.Text := 'select idsell from sellorder where faktur='+ Quotedstr(SellTxtNo.Text) ;
+    Open;
+    idTrans := Fields[0].AsString;
+
+    Close;
+    SQL.Clear;
+    SQL.Add('insert into sellorderdetail');
+    SQL.Add('(faktur,kode,nama,kategori,merk,tipe,seri,hargajual,diskon,diskon2,diskonrp,');
+    SQL.Add('quantity,hargabeli,satuan,kodepromo,idstts,idsell,subtotal,vsubtotal)');
+    SQL.Add('select faktur,kode,nama,kategori,merk,tipe,seri,harga,diskon,diskon2,diskonrp,');
+    SQL.Add('quantity,hargabeli,satuan,getKodePromo('+QuotedStr(vKodeCust)+',kode),idstts,'+ Quotedstr(idTrans) +',subtotal,vsubtotal from formsellorder where ipv='+ Quotedstr(ipcomp) );
+    ExecSQL;
+
+    DataModule1.ZConnection1.ExecuteDirect('update sellorderdetail o set o.satuan=(select satuan from product where kode=o.kode) where (o.faktur="'+ SellTxtNo.Text +'") and ((o.satuan="") or (o.satuan is null))');
+
+
+{    Close;
+    SQL.Clear;
+    SQL.Text := 'select idsell from sellorderdetail where faktur='''+ SellTxtNo.Text +'''';
+    Open;
+    idTrans := Fields[0].AsString;
+    ///Input Inventory
+    Close;
+    SQL.Clear;
+    SQL.Add('insert into inventory ');
+    SQL.Add('(kodebrg,qty,satuan,faktur,typetrans,idTrans,tglTrans,kodeGudang) ');
+    SQL.Add('select kode,(quantity * -1),satuan,faktur,''penjualan'','''+idTrans+''',''' + FormatDateTime('yyyy-MM-dd',frmUtama.TglSkrg) + ''',''' + frmUtama.KodeGudang + ''' from selldetail ');
+    SQL.Add('where faktur = ''' + SellTxtNo.Text + '''');
+    ExecSQL;          }
+  end;
+
+  ///Jika cetak maka langsung diposting / dibuat final (tidak bisa dihapus lagi)
+  if SellTxtCetak.Checked = True then
+  begin
+
+  end;
+end;
+
+procedure TfrmSellOrder.UpdateData;
+var idTrans: string;
+begin
+  with DataModule1.ZQryFunction do
+  begin
+    Close;
+    SQL.Clear;
+    SQL.Add('update sellorder set');
+    SQL.Add('tanggal = ''' + FormatDateTime('yyyy-MM-dd',SellTxtTgl.Date) + ''',');
+    SQL.Add('waktu = ''' + FormatDateTime('hh:mm:ss',Now) + ''',');
+    SQL.Add('kasir = ' + QuotedStr(UserName) + ',');
+    SQL.Add('IDcustomer = ' + QuotedStr(inttostr(vIDCust)) + ',');
+    SQL.Add('kodecustomer = ' + QuotedStr(vKodeCust) + ',');
+    SQL.Add('customer = ' + QuotedStr(SellTxtCustomer.Text) + ',');
+    SQL.Add('alamat = ' + QuotedStr(valamat) + ',');
+    SQL.Add('kota = ' + QuotedStr(vKota) + ',');
+    SQL.Add('kodesales = ' + QuotedStr(vKodesales) + ',');
+    SQL.Add('namasales = ' + QuotedStr(SellTxtSales.text) + ',');
+    SQL.Add('notes = ' + QuotedStr(mem_notes.text) + ',');
+    SQL.Add('pembayaran = ''' + SellTxtPembayaran.Text + ''',');
+    SQL.Add('nogiro = ''' + SellTxtNoCredit.Text + ''',');
+    SQL.Add('tgljatuhtempo = ''' + FormatDateTime('yyyy-MM-dd',SellTxtTempo.Date) + ''',');
+    SQL.Add('subtotal = ''' + FloatToStr(SellTxtSubTotal.Value) + ''',');
+    SQL.Add('ppn = ''' + FloatToStr(SellTxtPPN.Value) + ''',');
+    SQL.Add('total = ''' + FloatToStr(SellTxtTotal.Value) + ''',');
+    SQL.Add('diskon = ''' + AnsiReplaceText(FloatToStr(SellTxtDisc.Value),',','.') + ''',');
+    SQL.Add('diskonrp = ''' + FloatToStr(SellTxtDiscRp.Value) + ''',');
+    SQL.Add('grandtotal = ''' + FloatToStr(SellTxtGrandTotal.Value) + ''',');
+    SQL.Add('bayar = ''' + FloatToStr(SellTxtDibayar.Value) + ''',');
+    SQL.Add('kembali = ''' + FloatToStr(SellTxtKembali.Value) + ''',');
+    SQL.Add('totalpayment = ''' + FloatToStr(SellTxtDibayar.Value - SellTxtKembali.Value) + ''',');
+    if (SellTxtDibayar.Value - SellTxtKembali.Value)>=SellTxtGrandTotal.Value then
+      SQL.Add('lunas = ''' + '1' + '''')
+    else
+      SQL.Add('lunas = ''' + '0' + '''');
+    SQL.Add('where faktur = ''' + SellTxtNo.Text + '''');
+    ExecSQL;
+
+    Close;
+    SQL.Clear;
+    SQL.Add('delete from sellorderdetail');
+    SQL.Add('where faktur = ''' + SellTxtNo.Text + '''');
+    ExecSQL;
+
+    Close;
+    SQL.Clear;
+    SQL.Add('insert into sellorderdetail');
+    SQL.Add('(faktur,kode,nama,kategori,merk,tipe,seri,hargajual,diskon,diskon2,diskonrp,');
+    SQL.Add('quantity,hargabeli,satuan,kodepromo,idstts,vsubtotal)');
+    SQL.Add('select faktur,kode,nama,kategori,merk,tipe,seri,harga,diskon,diskon2,diskonrp,');
+    SQL.Add('quantity,hargabeli,satuan,getKodePromo('+QuotedStr(vKodeCust)+',kode),idstts,vsubtotal from formsellorder');
+    ExecSQL;
+
+    DataModule1.ZConnection1.ExecuteDirect('update sellorderdetail o set o.satuan=(select satuan from product where kode=o.kode) where (o.faktur="'+ SellTxtNo.Text +'") and ((o.satuan="") or (o.satuan is null))');
+
+        DataModule1.ZQryUtil.Close;
+        DataModule1.ZQryUtil.SQL.Clear;
+        DataModule1.ZQryUtil.SQL.Text:='select sum((quantity*hargajual)-diskonrp) from sellorderdetail where faktur="'+SellTxtNo.Text+'"';
+        DataModule1.ZQryUtil.Open;
+        DataModule1.ZConnection1.ExecuteDirect('update sellorder set subtotal="'+DataModule1.ZQryUtil.Fields[0].AsString+'",total="'+DataModule1.ZQryUtil.Fields[0].AsString+'",grandtotal="'+DataModule1.ZQryUtil.Fields[0].AsString+'" where faktur="'+SellTxtNo.Text+'"');
+        DataModule1.ZQryUtil.Close;
+
+{    DataModule1.ZConnection1.ExecuteDirect('delete from inventory where faktur = ''' + SellTxtNo.Text + '''');
+    Close;
+    SQL.Clear;
+    SQL.Text := 'select idsell from sellorder where faktur='''+ SellTxtNo.Text +'''';
+    Open;
+    idTrans := Fields[0].AsString;
+    ///Input Inventory
+    Close;
+    SQL.Clear;
+    SQL.Add('insert into inventory ');
+    SQL.Add('(kodebrg,qty,satuan,faktur,typetrans,idTrans,tglTrans,kodeGudang) ');
+    SQL.Add('select kode,(quantity * -1),satuan,faktur,''penjualan'','''+idTrans+''',''' + FormatDateTime('yyyy-MM-dd',frmUtama.TglSkrg) + ''',''' + frmUtama.KodeGudang + ''' from selldetail ');
+    SQL.Add('where faktur = ''' + SellTxtNo.Text + '''');
+    ExecSQL;             }
+  end;
+end;
+
+procedure TfrmSellOrder.FormShow(Sender: TObject);
+begin
+  FillCombo;
+
+  if SellLblCaption.Caption = 'Tambah Penjualan' then
+  begin
+    ClearForm;
+  end
+  else
+  begin
+    SellTxtCetak.Checked := false;
+
+    SellTxtNo.Text := DataModule1.ZQrysellorderfaktur.Value;
+    SellTxtTgl.Date := DataModule1.ZQrysellordertanggal.Value;
+    vkodecust := DataModule1.ZQrysellorderkodecustomer.Value;
+    vIDcust := DataModule1.ZQrysellorderIDcustomer.Value;
+    SellTxtCustomer.Text := DataModule1.ZQrysellordercustomer.Value;
+    valamat := DataModule1.ZQrysellorderalamat.Value;
+    vkota   := DataModule1.ZQrysellorderkota.Value;
+    sellTxtalamat.Clear;
+    sellTxtalamat.Lines.Add(Datamodule1.ZQrySearchCustalamat.AsString);
+    sellTxtalamat.Lines.Add(Datamodule1.ZQrySearchCustkota.AsString);
+    vkodesales := DataModule1.ZQrysellorderkodesales.Value;
+    SellTxtSales.Text := DataModule1.ZQrysellordernamasales.Value;
+
+    SellLblGrandTotal.Caption := FormatCurr('Rp ###,##0',DataModule1.ZQrysellordergrandtotal.Value);
+    SellTxtSubTotal.Value := DataModule1.ZQrysellordersubtotal.Value;
+    SellTxtPPN.Value := DataModule1.ZQrysellorderppn.Value;
+    SellTxtTotal.Value := DataModule1.ZQrysellordertotal.Value;
+    SellTxtDisc.Value := DataModule1.ZQrysellorderdiskon.Value;
+    SellTxtDiscRp.Value := DataModule1.ZQrysellorderdiskonrp.Value;
+    SellTxtGrandTotal.Value := DataModule1.ZQrysellordergrandtotal.Value;
+    IndexCombo(SellTxtPembayaran,DataModule1.ZQrysellorderpembayaran.Value);
+    SellTxtDibayar.Value := DataModule1.ZQrysellorderbayar.Value;
+    SellTxtKembali.Value := DataModule1.ZQrysellorderkembali.Value;
+    SellTxtNoCredit.Text := DataModule1.ZQrysellordernogiro.Value;
+    SellTxtTempo.Date := DataModule1.ZQrysellordertgljatuhtempo.Value;
+    mem_notes.Text := DataModule1.ZQrysellordernotes.Value;
+
+    SellTxtPembayaranChange(Self);
+
+    oldTotal := DataModule1.ZQrysellordergrandtotal.Value;
+
+    ClearTabel('formsellorder');
+    with DataModule1.ZQryFunction do
+    begin
+      Close;
+      SQL.Clear;
+      SQL.Add('insert into formsellorder');
+      SQL.Add('(kode,nama,harga,quantity,totalharga,diskon,diskon2,diskonrp,subtotal,');
+      SQL.Add('faktur,kategori,merk,tipe,seri,kodepromo,idstts,vsubtotal)');
+      SQL.Add('select kode,nama,hargajual,quantity,quantity * hargajual,');
+      SQL.Add('diskon,diskon2,diskonrp,(quantity * hargajual) - diskonrp,');
+      SQL.Add('faktur,kategori,merk,tipe,seri,kodepromo,idstts,vsubtotal from sellorderdetail');
+      SQL.Add('where faktur = ''' + DataModule1.ZQrysellorderfaktur.Text + '''');
+      ExecSQL;
+    end;
+    RefreshTabel(DataModule1.ZQryFormSell);
+    SubTotal := DataModule1.ZQrysellordersubtotal.Value;
+  end;
+end;
+
+procedure TfrmSellOrder.SellBtnAddClick(Sender: TObject);
+begin
+  CetakFaktur := SellTxtNo.Text;
+  DataModule1.ZQryFormSellOrder.CommitUpdates;
+
+  if SellTxtCustomer.text = '' then
+  begin
+    ErrorDialog('Pelanggan belum dipilih/diisi !');
+    SellTxtCustomer.SetFocus;
+    Exit;
+  end;
+
+  if SellTxtSales.text = '' then
+  begin
+    ErrorDialog('Sales belum dipilih/diisi !');
+    Exit;
+  end;
+
+{  if (SellTxtNoCredit.Visible = True) and (SellTxtNoCredit.Text = '') then
+  begin
+    ErrorDialog('No. ' + SellTxtPembayaran.Value+ ' belum diisi');
+    SellTxtNoCredit.SetFocus;
+    Exit;
+  end;     }
+  if (SellTxtNoCredit.Visible = false) then SellTxtNoCredit.Text := '';
+
+{  if SellTxtDibayar.Value = 0 then
+  begin
+    ErrorDialog('Pembayaran belum diisi !');
+    SellTxtDibayar.SetFocus;
+    Exit;
+  end;      }
+  with DataModule1.ZQrySearch do
+  begin
+    ///Check apakah ada yang belum diinput
+    Close;
+    SQL.Clear;
+    SQL.Add('select faktur from formsellorder ');
+    SQL.Add('where ipv='+Quotedstr(ipcomp)+' and quantity <= 0 ');
+    Open;
+    if not IsEmpty then
+    begin
+      ErrorDialog('Nilai tidak boleh kosong!');
+      Exit;
+    end;
+  end;
+
+  if SellLblCaption.Caption = 'Tambah Penjualan' then
+  begin
+    InsertDataMaster;
+    if SellTxtCetak.Checked = True then
+    begin
+  //    PostingJual(CetakFaktur);
+  //    PrintStruck(CetakFaktur);
+    end;
+    InfoDialog('Insert Order Penjualan Faktur No. ' + SellTxtNo.Text + ' berhasil');
+    // LogInfo(UserName,'Insert Order Penjualan Faktur No: ' + SellTxtNo.Text + ',Total: ' + FloatToStr(SellTxtGrandTotal.Value));
+    DataModule1.ZConnection1.ExecuteDirect('delete from sellorder');
+    ClearForm;
+  end
+  else
+  begin
+    UpdateData;
+    if SellTxtCetak.Checked = True then
+    begin
+  //    PostingJual(CetakFaktur);
+ //     PrintStruck(CetakFaktur);
+    end;
+    InfoDialog('Edit Penjualan Faktur No. ' + SellTxtNo.Text + ' berhasil');
+    LogInfo(UserName,'Edit Penjualan Faktur No. ' + SellTxtNo.Text + ', Old Total: ' + FloatToStr(OldTotal) + ' New Total: ' + FloatToStr(SellTxtGrandTotal.Value));
+    Close;
+  end;
+end;
+
+procedure TfrmSellOrder.SellBtnDelClick(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TfrmSellOrder.PenjualanDBGridKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key = VK_F1 then
+  begin
+    if trim(SellTxtCustomer.Text)='' then
+    begin
+     errordialog('Input Data Customer/Pelanggan dulu!');
+     SellTxtCustomer.SetFocus;
+     exit;
+    end;
+    frmSrcProd.formSender := frmSellOrder;
+    frmSrcProd.ShowModal;
+
+    frmhistoryBS.transmode := 1;
+    frmhistoryBS.kodecust := vkodecust;
+    frmhistoryBS.namacust := SellTxtCustomer.Text;
+    frmhistoryBS.kodebrg := DataModule1.ZQryFormSellOrderkode.Value;
+    frmhistoryBS.namabrg := DataModule1.ZQryFormSellOrdernama.Value;
+    frmhistoryBS.ShowModal;
+  end;
+
+ if Key = VK_F3 then
+ begin
+  frmSrcCust.formSender := frmSellOrder;
+  frmSrcCust.ShowModal;
+ end;
+
+
+  if Key = VK_F4 then
+    SellTxtDibayar.SetFocus;
+  if (Key in [VK_RETURN, VK_RIGHT, VK_TAB]) then
+  begin
+    if PenjualanDBGrid.SelectedIndex in [5,6] then
+    begin
+      DataModule1.ZQryFormSellOrder.CommitUpdates;
+      CekMaxStock;
+      CalculateGridSell;
+  //    PenjualanDBGrid.SelectedIndex := 8;
+    end
+    else if PenjualanDBGrid.SelectedIndex = 8 then
+    begin
+      DataModule1.ZQryFormSellOrder.CommitUpdates;
+      CalculateGridSell;
+
+      DataModule1.ZQryFormSellOrder.Append;
+      PenjualanDBGrid.SelectedIndex := 6;
+    end
+    else
+    begin
+      DataModule1.ZQryFormSellOrder.CommitUpdates;
+      CalculateGridSell;
+    end;
+  end;
+
+  if (Key=VK_UP) then
+  begin
+   CalculateGridSell;
+  end;
+
+  if (Key=VK_DOWN) then
+  begin
+   DataModule1.ZQryFormSellOrder.CommitUpdates;
+   CalculateGridSell;
+   DataModule1.ZQryFormSellOrder.Append;
+   PenjualanDBGrid.SelectedIndex := 6;
+  end;
+
+  if (Key in [VK_DELETE]) then
+  begin
+    SubTotal := SubTotal - DataModule1.ZQryFormSellOrdersubtotal.Value;
+    DataModule1.ZQryFormSellOrder.Delete;
+    CalculateGridSell;
+  end;
+end;
+
+procedure TfrmSellOrder.SellTxtPPNChange(Sender: TObject);
+begin
+  CalculateSell;
+end;
+
+procedure TfrmSellOrder.SellTxtDiscChange(Sender: TObject);
+begin
+  SellTxtDiscRp.Value := SellTxtTotal.Value * SellTxtDisc.Value * 0.01;
+  CalculateSell;
+end;
+
+procedure TfrmSellOrder.SellTxtDibayarChange(Sender: TObject);
+begin
+  SellTxtKembali.Value := SellTxtDibayar.Value - SellTxtGrandTotal.Value;
+  if SellTxtKembali.Value<0 then SellTxtKembali.Value:=0;
+end;
+
+procedure TfrmSellOrder.SellTxtPembayaranChange(Sender: TObject);
+begin
+  if SellTxtPembayaran.Value = 'TUNAI' then
+  begin
+    SellPanelCredit.Visible := False;
+    SellTxtNoCredit.Visible := False;
+  end
+  else
+  begin
+    SellPanelCredit.Visible := True;
+    SellLblNoCredit.Caption := 'No. Bukti';
+    SellLblNoCredit.Visible := true;
+    SellTxtNoCredit.Visible := SellLblNoCredit.Visible;
+
+    SellPanelCredit.SetFocus;
+  end;
+end;
+
+procedure TfrmSellOrder.SellTxtTempoChange(Sender: TObject);
+begin
+{  if SellTxtPembayaran.Value <> 'TUNAI' then
+  begin
+    SellPanelCredit.Visible := True;
+    SellLblNoCredit.Caption := 'No. ' + SellTxtPembayaran.Value;
+    SellPanelCredit.SetFocus;
+  end
+  else
+    SellPanelCredit.Visible := False;     }
+end;
+
+end.

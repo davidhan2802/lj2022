@@ -1,0 +1,1078 @@
+mplus
+
+penjualan offline
+promo diskon
+laporan stok toko per departemen (kode,departemen,qty,value)
+laporan penerimaan per departemen per gudang (kode,nama departemen,total qty, total uang) dan detail per brg
+laporan mutasi (rekapitulasi) (per departemen: kode,nama brg, totalqty,total uang)
+laporan stok gudang
+laporan global stok (masuk,penjualan,retur toko,retur gudang,saldo toko)
+laporan penerimaan kasir(qty,value,persen)
+rekapitulasi penjualan oleh kasir
+laporan penjualan
+laporan daftar barang diskon
+po
+daftar pemesanan barang
+mutasi barang (pindah gudang)
+retur harga
+input saldo awal gudang dan toko (qty,value)
+lokasi toko
+barang terlaku top 20
+daftar tgl kadaluarsa brg
+daftar perubahan harga
+nota struk retur
+monitoring kasir
+
+laporan daftar perubahan harga
+laporan pembelian
+laporan pengeluaran per departemen
+laporan belanja
+mencari harga modal
+input registrasi kasir
+closing register
+informasi aplikasi
+
+select i.kodebrg,p.nama,(select sum(y1.qty) from inventory y1 where (y1.kodegudang=i.kodegudang) and (y1.kodebrg=i.kodebrg) and (y1.tgltrans<'2017-12-01')) qtyawal, 
+(select sum(y2.qty*y2.hargabeli) from inventory y2 where (y2.kodegudang=i.kodegudang) and (y2.kodebrg=i.kodebrg) and (y2.tgltrans<'2017-12-01')) amountawal,
+sum(if(i.qty>0,i.qty,0)) qtymasuk,sum(if(i.qty>0,i.qty,0)*i.hargabeli) amountmasuk,
+-1*sum(if((i.qty<0)and(trim(i.`typetrans`)='penjualan'),i.qty,0)) qtyjual,
+-1*sum(if((i.qty<0)and(trim(i.`typetrans`)='penjualan'),i.qty,0)*i.hargabeli) amountjual,
+-1*sum(if((i.qty<0)and(trim(i.`typetrans`)<>'penjualan'),i.qty,0)) qtykeluar,
+-1*sum(if((i.qty<0)and(trim(i.`typetrans`)<>'penjualan'),i.qty,0)*i.hargabeli) amountkeluar 
+from inventory i left join product p on i.`kodebrg`=p.kode 
+where i.`kodegudang`='SL' 
+group by i.kodebrg,p.nama 
+order by i.kodebrg;
+
+CREATE TABLE `struk` (
+  `IDstruk` TINYINT(4) NOT NULL AUTO_INCREMENT,
+  `company` VARCHAR(150) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `alamat` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `kota` VARCHAR(100) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `cabang` VARCHAR(100) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `footer1` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `footer2` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `footer3` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `footer4` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `footer5` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `endfooter1` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `endfooter2` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `endfooter3` VARCHAR(255) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `mintrans` DOUBLE(15,3) NOT NULL DEFAULT '0.000',
+  `isaktif` TINYINT(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`IDstruk`)
+)ENGINE=InnoDB
+AUTO_INCREMENT=3 CHARACTER SET 'latin1' COLLATE 'latin1_swedish_ci';
+
+/* Data for the `struk` table  (Records 1 - 2) */
+
+INSERT INTO `struk` (`IDstruk`, `company`, `alamat`, `kota`, `cabang`, `footer1`, `footer2`, `footer3`, `footer4`, `footer5`, `endfooter1`, `endfooter2`, `endfooter3`, `mintrans`, `isaktif`) VALUES 
+  (1, 'PT. MPLUS', 'JL. CITEUREUP', 'CITEUREUP', 'CITEUREUP', '* TERIMA KASIH *', 'SILAKAN DATANG KEMBALI', 'Mohon perhatian kepada para konsumen, ', 'UNDERWEAR dan LEGGING tdk bisa di- TUKAR!', 'untuk alasan kesehatan', 'S E L A M A T ', 'Anda Berhak Mendapatkan Hadiah Berupa', 'Bingkisan Menarik', 350000, 1),
+  (2, 'PT. MPLUS', 'JL. CIBINONG', 'CIBINONG', 'CIBINONG', '* TERIMA KASIH *', 'SILAKAN DATANG KEMBALI', 'Mohon perhatian kepada para konsumen, ', 'UNDERWEAR dan LEGGING tdk bisa di- TUKAR!', 'untuk alasan kesehatan', 'S E L A M A T ', 'Anda Berhak Mendapatkan Hadiah Berupa', 'Bingkisan Menarik', 350000, 0);
+
+
+insert into product (kode,barcode,nama,satuan,hargajual,idgolongan) 
+select b.kode,b.barcode,b.nama,b.satuan,b.hargajual,g.idgolongan from prodbuf b 
+left join golongan g on b.kodegol=g.kode order by kode;
+
+insert into inventory (tgltrans,kodebrg,kodegudang,qty,satuan,typetrans,faktur,IDuser,username,waktu,hargajual,keterangan) 
+select '2018-02-01',kode,'CTT',qty,satuan,'STOK AWAL','STOK AWAL',5,'yadi','08:00:00',hargajual,'STOK AWAL' from prodbuf 
+order by kode;
+
+cacls mplus.exe /p everyone:r
+
+anydesk cibinong 637457272
+
+CREATE TABLE `labelharga` (
+  `ipv` VARCHAR(50) COLLATE latin1_swedish_ci DEFAULT NULL,
+  `IDproduct` INTEGER(11) DEFAULT NULL,
+  `IDproduct2` INTEGER(11) DEFAULT NULL,
+  `IDproduct3` INTEGER(11) DEFAULT NULL
+)ENGINE=InnoDB
+CHARACTER SET 'latin1' COLLATE 'latin1_swedish_ci';
+
+CREATE DEFINER = 'metabrain'@'%' PROCEDURE `cleardatayear`(
+        IN vyear int(11)
+    )
+    NOT DETERMINISTIC
+    CONTAINS SQL
+    SQL SECURITY DEFINER
+    COMMENT ''
+BEGIN  
+ SET FOREIGN_KEY_CHECKS=0;
+ 
+ set @DISABLE_TRIGGERS=1;
+/* delete from inventory where kodebrg not in (select kode from product); */
+
+ truncate sparepart2.inventory;
+
+ insert into sparepart2.inventory (tgltrans,kodebrg,typetrans,faktur,keterangan,kodegudang,qty,satuan,IDuser,username,waktu) 
+ select cast(concat(vyear+1,'-01-01') as date) tgl,kodebrg,'STOK AWAL','STOK AWAL','STOK AWAL',kodegudang,sum(qty) qty,satuan,1 iduser,'OWNER' username,'00:00:00' waktu from sparepart.inventory 
+ where year(tgltrans)<=vyear   
+ group by kodebrg,kodegudang,satuan;
+ 
+ 
+ insert into sparepart2.inventory (tgltrans,kodebrg,kodegudang,qty,satuan,typetrans,faktur,idtrans,IDuser,username,waktu,keterangan,hargabeli,hargajual) select tgltrans,kodebrg,kodegudang,qty,satuan,typetrans,faktur,idtrans,IDuser,username,waktu,keterangan,hargabeli,hargajual from sparepart.inventory where year(tgltrans)=vyear+1;
+ truncate sparepart.inventory;
+ insert into sparepart.inventory select i.* from sparepart2.inventory i left join sparepart.product p on i.kodebrg=p.kode where p.kode is not null;
+ 
+ truncate sparepart2.adjustmaster;
+ truncate sparepart2.adjustdetail;
+ insert into sparepart2.adjustmaster select * from sparepart.adjustmaster where year(tanggal)=vyear+1;
+ insert into sparepart2.adjustdetail select d.* from sparepart.adjustdetail d inner join sparepart.adjustmaster m on d.`faktur`=m.`faktur` where year(m.tanggal)=vyear+1;
+ truncate sparepart.adjustmaster;
+ truncate sparepart.adjustdetail;
+ insert into sparepart.adjustmaster select * from sparepart2.adjustmaster;
+ insert into sparepart.adjustdetail select * from sparepart2.adjustdetail;
+
+ truncate sparepart2.buymaster;
+ truncate sparepart2.buydetail;
+ insert into sparepart2.buymaster select * from sparepart.buymaster where year(tanggal)=vyear+1;
+ insert into sparepart2.buydetail select d.* from sparepart.buydetail d inner join sparepart.buymaster m on d.`faktur`=m.`faktur` where year(m.tanggal)=vyear+1;
+ truncate sparepart.buymaster;
+ truncate sparepart.buydetail;
+ insert into sparepart.buymaster select * from sparepart2.buymaster;
+ insert into sparepart.buydetail select * from sparepart2.buydetail;
+
+ truncate sparepart2.loginfo;
+ insert into sparepart2.loginfo select * from sparepart.loginfo where year(tanggal)=vyear+1;
+ truncate sparepart.loginfo;
+ insert into sparepart.loginfo select * from sparepart2.loginfo;
+
+ truncate sparepart2.operasional;
+ insert into sparepart2.operasional select * from sparepart.operasional where year(tanggal)=vyear+1;
+ truncate sparepart.operasional;
+ insert into sparepart.operasional select * from sparepart2.operasional;
+
+ truncate sparepart2.returbelimaster;
+ truncate sparepart2.returbelidetail;
+ insert into sparepart2.returbelimaster select * from sparepart.returbelimaster where year(tanggal)=vyear+1;
+ insert into sparepart2.returbelidetail select d.* from sparepart.returbelidetail d inner join sparepart.returbelimaster m on d.`faktur`=m.`faktur` where year(m.tanggal)=vyear+1;
+ truncate sparepart.returbelimaster;
+ truncate sparepart.returbelidetail;
+ insert into sparepart.returbelimaster select * from sparepart2.returbelimaster;
+ insert into sparepart.returbelidetail select * from sparepart2.returbelidetail;
+
+ truncate sparepart2.returjualmaster;
+ truncate sparepart2.returjualdetail;
+ insert into sparepart2.returjualmaster select * from sparepart.returjualmaster where year(tanggal)=vyear+1;
+ insert into sparepart2.returjualdetail select d.* from sparepart.returjualdetail d inner join sparepart.returjualmaster m on d.`faktur`=m.`faktur` where year(m.tanggal)=vyear+1;
+ truncate sparepart.returjualmaster;
+ truncate sparepart.returjualdetail;
+ insert into sparepart.returjualmaster select * from sparepart2.returjualmaster;
+ insert into sparepart.returjualdetail select * from sparepart2.returjualdetail;
+
+ truncate sparepart2.sellmaster;
+ truncate sparepart2.selldetail;
+ insert into sparepart2.sellmaster select * from sparepart.sellmaster where year(tanggal)=vyear+1;
+ insert into sparepart2.selldetail select d.* from sparepart.selldetail d inner join sparepart.sellmaster m on d.`faktur`=m.`faktur` where year(m.tanggal)=vyear+1;
+ truncate sparepart.sellmaster;
+ truncate sparepart.selldetail;
+ insert into sparepart.sellmaster select * from sparepart2.sellmaster;
+ insert into sparepart.selldetail select * from sparepart2.selldetail;
+
+ truncate sparepart2.terimagudang;
+ truncate sparepart2.terimagudangdet;
+ insert into sparepart2.terimagudang select * from sparepart.terimagudang where year(doctgl)=vyear+1;
+ insert into sparepart2.terimagudangdet select d.* from sparepart.terimagudangdet d inner join sparepart.terimagudang m on d.IDterimagudang=m.IDterimagudang where year(m.doctgl)=vyear+1;
+ truncate sparepart.terimagudang;
+ truncate sparepart.terimagudangdet;
+ insert into sparepart.terimagudang select * from sparepart2.terimagudang;
+ insert into sparepart.terimagudangdet select * from sparepart2.terimagudangdet;
+
+ truncate sparepart2.terimapurchase;
+ truncate sparepart2.terimapurchasedet;
+ insert into sparepart2.terimapurchase select * from sparepart.terimapurchase where year(doctgl)=vyear+1;
+ insert into sparepart2.terimapurchasedet select d.* from sparepart.terimapurchasedet d inner join sparepart.terimapurchase m on d.IDterimapurchase=m.IDterimapurchase where year(m.doctgl)=vyear+1;
+ truncate sparepart.terimapurchase;
+ truncate sparepart.terimapurchasedet;
+ insert into sparepart.terimapurchase select * from sparepart2.terimapurchase;
+ insert into sparepart.terimapurchasedet select * from sparepart2.terimapurchasedet;
+
+ truncate sparepart2.purchaseorder;
+ truncate sparepart2.purchaseorderdet;
+ insert into sparepart2.purchaseorder select * from sparepart.purchaseorder where year(tgl)=vyear+1;
+ insert into sparepart2.purchaseorderdet select d.* from sparepart.purchaseorderdet d inner join sparepart.purchaseorder m on d.IDpurchaseorder=m.IDpurchaseorder where year(tgl)=vyear+1;
+ truncate sparepart.purchaseorder;
+ truncate sparepart.purchaseorderdet;
+ insert into sparepart.purchaseorder select * from sparepart2.purchaseorder;
+ insert into sparepart.purchaseorderdet select * from sparepart2.purchaseorderdet;
+
+ truncate sparepart2.pindahgudang;
+ truncate sparepart2.pindahgudangdet;
+ insert into sparepart2.pindahgudang select * from sparepart.pindahgudang where year(doctgl)=vyear+1;
+ insert into sparepart2.pindahgudangdet select d.* from sparepart.pindahgudangdet d inner join sparepart.pindahgudang m on d.IDpindahgudang=m.IDpindahgudang where year(m.doctgl)=vyear+1;
+ truncate sparepart.pindahgudang;
+ truncate sparepart.pindahgudangdet;
+ insert into sparepart.pindahgudang select * from sparepart2.pindahgudang;
+ insert into sparepart.pindahgudangdet select * from sparepart2.pindahgudangdet;
+
+ truncate sparepart2.diskon;
+ truncate sparepart2.diskondet;
+ insert into sparepart2.diskon select * from sparepart.diskon where year(tglakhir)=vyear+1;
+ insert into sparepart2.diskondet select d.* from sparepart.diskondet d inner join sparepart.diskon m on d.IDdiskon=m.IDdiskon where year(m.tglakhir)=vyear+1;
+ truncate sparepart.diskon;
+ truncate sparepart.diskondet;
+ insert into sparepart.diskon select * from sparepart2.diskon;
+ insert into sparepart.diskondet select * from sparepart2.diskondet;
+
+ truncate sparepart2.ubahharga;
+ truncate sparepart2.ubahhargadet;
+ insert into sparepart2.ubahharga select * from sparepart.ubahharga where year(doctgl)=vyear+1;
+ insert into sparepart2.ubahhargadet select d.* from sparepart.ubahhargadet d inner join sparepart.ubahharga m on d.IDubahharga=m.IDubahharga where year(m.doctgl)=vyear+1;
+ truncate sparepart.ubahharga;
+ truncate sparepart.ubahhargadet;
+ insert into sparepart.ubahharga select * from sparepart2.ubahharga;
+ insert into sparepart.ubahhargadet select * from sparepart2.ubahhargadet;
+ 
+/* delete from adjustmaster where year(tanggal)<=vyear;  
+ delete from buymaster where year(tanggal)<=vyear;  
+ delete from loginfo where year(tanggal)<=vyear;  
+ delete from operasional where year(tanggal)<=vyear;  
+ delete from returbelimaster where year(tanggal)<=vyear;  
+ delete from returjualmaster where year(tanggal)<=vyear;  
+ delete from sellmaster where year(tanggal)<=vyear;  
+ delete from terimagudang where year(doctgl)<=vyear;  
+ delete from terimapurchase where year(doctgl)<=vyear;  
+ delete from purchaseorder where year(tgl)<=vyear; 
+ delete from pindahgudang where year(doctgl)<=vyear;  
+ delete from diskon where year(tglakhir)<=vyear;  
+ delete from ubahharga where year(doctgl)<=vyear; 
+ */
+ set @DISABLE_TRIGGERS=NULL;
+ 
+ commit;
+END;
+
+SET FOREIGN_KEY_CHECKS=0;
+
+USE `sparepart2`;
+
+CREATE TABLE `adjustdetail` (
+  `idAdjust` int(11) NOT NULL DEFAULT '0',
+  `faktur` varchar(50) DEFAULT NULL,
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `kategori` varchar(50) DEFAULT NULL,
+  `merk` varchar(50) DEFAULT NULL,
+  `seri` varchar(50) DEFAULT NULL,
+  `keterangan` varchar(255) DEFAULT NULL,
+  `qtybefore` double(15,3) DEFAULT '0.000',
+  `qtyafter` double(15,3) DEFAULT '0.000',
+  `hargabeli` double(15,3) DEFAULT '0.000',
+  `hargajual` double(15,3) DEFAULT '0.000',
+  `diskon` float(9,3) DEFAULT '0.000',
+  `diskonrp` double(15,3) DEFAULT '0.000',
+  `satuan` varchar(20) DEFAULT NULL,
+  `subtotal` double(15,3) DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `adjustmaster` (
+  `idAdjust` int(11) NOT NULL,
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `tanggal` date DEFAULT NULL,
+  `waktu` time DEFAULT NULL,
+  `operator` varchar(50) DEFAULT NULL,
+  `totaladjust` double(15,3) DEFAULT '0.000',
+  `isposted` int(11) DEFAULT '0' COMMENT '-1 = batal posting\r\n0 = belum posting\r\n1 = sudah posting',
+  `kodegudang` varchar(10) NOT NULL DEFAULT 'TK'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `buydetail` (
+  `idBeli` int(11) NOT NULL,
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `kategori` varchar(50) DEFAULT NULL,
+  `merk` varchar(50) DEFAULT NULL,
+  `seri` varchar(50) DEFAULT NULL,
+  `satuan` varchar(20) DEFAULT NULL,
+  `hargabeli` double(15,3) DEFAULT '0.000',
+  `diskon` float(9,3) DEFAULT '0.000',
+  `quantity` double(15,3) DEFAULT '0.000',
+  `harganondiskon` double(15,3) DEFAULT '0.000',
+  `isposted` tinyint(1) NOT NULL DEFAULT '1',
+  `subtotal` double(15,3) NOT NULL DEFAULT '0.000',
+  `barcode` varchar(80) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `buymaster` (
+  `idBeli` int(11) NOT NULL,
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `noinvoice` varchar(50) NOT NULL DEFAULT '',
+  `tanggal` date DEFAULT NULL,
+  `waktu` time DEFAULT NULL,
+  `kasir` varchar(50) DEFAULT NULL,
+  `kodesupplier` varchar(20) DEFAULT NULL,
+  `supplier` varchar(100) DEFAULT NULL,
+  `alamat` varchar(250) DEFAULT NULL,
+  `kota` varchar(100) DEFAULT NULL,
+  `pembayaran` varchar(20) DEFAULT NULL,
+  `nogiro` varchar(20) DEFAULT NULL,
+  `tgljatuhtempo` date DEFAULT NULL,
+  `tempohari` tinyint(4) DEFAULT '0',
+  `subtotal` double(15,3) DEFAULT '0.000',
+  `ppn` double(15,3) DEFAULT '0.000',
+  `total` double(15,3) DEFAULT '0.000',
+  `diskon` double(15,3) DEFAULT '0.000',
+  `diskonrp` double(15,3) DEFAULT '0.000',
+  `grandtotal` double(15,3) DEFAULT '0.000',
+  `DP` double(15,3) DEFAULT '0.000',
+  `kurang` double(15,3) DEFAULT '0.000',
+  `isposted` tinyint(1) DEFAULT '0',
+  `lunas` tinyint(1) DEFAULT '0',
+  `totalpayment` double(15,3) DEFAULT '0.000',
+  `bayarskrg` double(15,3) DEFAULT '0.000',
+  `checked` tinyint(1) DEFAULT '0',
+  `kodegudang` varchar(20) NOT NULL DEFAULT '',
+  `pono` varchar(50) DEFAULT NULL,
+  `IDuserposted` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 11264 kB; InnoDB free: 731136 kB';
+
+CREATE TABLE `buypayment` (
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `kodesupplier` varchar(20) NOT NULL DEFAULT '',
+  `supplier` varchar(100) DEFAULT NULL,
+  `tanggal` date NOT NULL,
+  `waktu` time NOT NULL,
+  `kasir` varchar(50) DEFAULT NULL,
+  `transfer` double(15,3) DEFAULT '0.000',
+  `tunai` double(15,3) DEFAULT '0.000',
+  `bg` double(15,3) DEFAULT '0.000',
+  `totalhutangfaktur` double(15,3) DEFAULT '0.000',
+  `totalretur` double(15,3) DEFAULT '0.000',
+  `diskonrp` double(15,3) DEFAULT '0.000',
+  `tanggalinput` date NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `isposted` tinyint(1) DEFAULT '0',
+  `saldo_hutang` double(15,3) DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `buypaymentbg` (
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `tgl` date DEFAULT NULL,
+  `transfer` double(15,3) DEFAULT '0.000',
+  `bg` double(15,3) DEFAULT '0.000',
+  `bgno` varchar(50) DEFAULT NULL,
+  `bgbank` varchar(200) DEFAULT NULL,
+  `bgtempo` date DEFAULT NULL,
+  `tobank` varchar(200) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `customer` (
+  `IDcustomer` int(11) NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) DEFAULT NULL,
+  `alamat` varchar(250) DEFAULT NULL,
+  `alamat2` varchar(255) DEFAULT NULL,
+  `kota` varchar(100) DEFAULT NULL,
+  `kota2` varchar(255) DEFAULT NULL,
+  `kodepos` varchar(10) DEFAULT NULL,
+  `telephone` varchar(50) DEFAULT NULL,
+  `telephone2` varchar(50) DEFAULT NULL,
+  `fax` varchar(50) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `website` varchar(200) DEFAULT NULL,
+  `cp` varchar(100) DEFAULT NULL,
+  `hp` varchar(30) DEFAULT NULL,
+  `hp2` varchar(30) DEFAULT NULL,
+  `hobby` varchar(255) DEFAULT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `tglreg` date DEFAULT NULL,
+  `tgllahir` date DEFAULT NULL,
+  `tglnoneffective` date DEFAULT NULL,
+  `npwp` varchar(80) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `diskon` (
+  `IDdiskon` int(11) NOT NULL,
+  `docno` varchar(30) NOT NULL DEFAULT '',
+  `doctgl` date DEFAULT NULL,
+  `tglawal` date NOT NULL,
+  `tglakhir` date NOT NULL,
+  `isactive` tinyint(1) NOT NULL DEFAULT '1',
+  `notes` varchar(500) DEFAULT NULL,
+  `IDuserposted` int(11) DEFAULT NULL,
+  `usernameposted` varchar(50) DEFAULT NULL,
+  `posted` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `diskondet` (
+  `IDdiskon` int(11) NOT NULL,
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `satuan` varchar(20) DEFAULT NULL,
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000',
+  `diskonrp` double(15,3) NOT NULL DEFAULT '0.000',
+  `minqty` double(15,3) NOT NULL DEFAULT '0.000',
+  `maxqty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `diskondetform` (
+  `ipv` varchar(50) NOT NULL DEFAULT '',
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `satuan` varchar(20) DEFAULT NULL,
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000',
+  `diskonrp` double(15,3) NOT NULL DEFAULT '0.000',
+  `minqty` double(15,3) NOT NULL DEFAULT '0.000',
+  `maxqty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `golongan` (
+  `IDgolongan` int(11) NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(150) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `gudang` (
+  `IDgudang` int(11) NOT NULL,
+  `kodegudang` varchar(10) NOT NULL DEFAULT '',
+  `namagudang` varchar(50) DEFAULT NULL,
+  `alamat1` varchar(50) DEFAULT NULL,
+  `alamat2` varchar(50) DEFAULT NULL,
+  `telp` varchar(20) DEFAULT NULL,
+  `fax` varchar(20) DEFAULT NULL,
+  `kota` varchar(50) DEFAULT NULL,
+  `wilayah` varchar(50) DEFAULT NULL,
+  `type` varchar(20) DEFAULT NULL,
+  `isbadstock` tinyint(1) NOT NULL DEFAULT '0',
+  `lokasi` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1 = PUSAT\r\n2 = CITEUREUP\r\n3 = CIBINONG'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `inventory` (
+  `IDinventory` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `tgltrans` date NOT NULL,
+  `kodebrg` varchar(20) NOT NULL DEFAULT '',
+  `kodegudang` varchar(10) NOT NULL DEFAULT 'TK',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `typetrans` varchar(20) NOT NULL DEFAULT '',
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `idtrans` int(11) NOT NULL DEFAULT '0',
+  `IDuser` int(11) DEFAULT NULL,
+  `username` varchar(50) NOT NULL DEFAULT '',
+  `waktu` time NOT NULL,
+  `keterangan` varchar(500) NOT NULL DEFAULT '',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000',
+  PRIMARY KEY (`IDinventory`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `inventoryimp` (
+  `ipv` varchar(50) DEFAULT NULL,
+  `IDproduct` int(11) DEFAULT NULL,
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `satuan` varchar(20) DEFAULT NULL,
+  `qty` double(15,3) DEFAULT '0.000',
+  `hargabelip` double(15,3) DEFAULT '0.000',
+  `hargajualp` double(15,3) DEFAULT '0.000',
+  `merk` varchar(50) DEFAULT NULL,
+  `seri` varchar(50) DEFAULT NULL,
+  `IDgolongan` int(11) DEFAULT NULL,
+  `hargabeli` double(15,3) DEFAULT '0.000',
+  `hargajual` double(15,3) DEFAULT '0.000',
+  `keterangan` varchar(255) DEFAULT NULL,
+  `tglnoneffective` date DEFAULT NULL,
+  `diskon` float(9,3) DEFAULT '0.000',
+  `diskonrp` double(15,3) DEFAULT '0.000',
+  `barcode` varchar(80) DEFAULT NULL,
+  `reorderqty` double(15,3) DEFAULT '0.000',
+  `expdate` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `inventorytemp` (
+  `IDinventory` int(11) unsigned NOT NULL,
+  `tgltrans` date NOT NULL,
+  `kodebrg` varchar(20) NOT NULL DEFAULT '',
+  `kodegudang` varchar(10) NOT NULL DEFAULT 'TK',
+  `qty` double(15,3) DEFAULT '0.000',
+  `satuan` varchar(20) DEFAULT NULL,
+  `typetrans` varchar(20) NOT NULL DEFAULT '',
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `idtrans` int(11) NOT NULL DEFAULT '0',
+  `IDuser` int(11) DEFAULT NULL,
+  `username` varchar(50) NOT NULL DEFAULT '',
+  `waktu` time NOT NULL,
+  `keterangan` varchar(500) DEFAULT NULL,
+  `ipv` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `jasa` (
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) DEFAULT NULL,
+  `komisi` double(15,3) DEFAULT '0.000',
+  `tglnoneffective` date DEFAULT '2100-01-01'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `konf` (
+  `masterproddate` date DEFAULT NULL,
+  `golongandate` date DEFAULT NULL,
+  `diskondate` date DEFAULT NULL,
+  `userdate` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `labelharga` (
+  `ipv` varchar(50) DEFAULT NULL,
+  `IDproduct` int(11) DEFAULT NULL,
+  `IDproduct2` int(11) DEFAULT NULL,
+  `IDproduct3` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `loginfo` (
+  `no` int(11) NOT NULL,
+  `tanggal` date DEFAULT NULL,
+  `waktu` time DEFAULT NULL,
+  `username` varchar(30) DEFAULT NULL,
+  `computername` varchar(30) DEFAULT NULL,
+  `keterangan` varchar(250) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `menu` (
+  `IDmenu` int(11) NOT NULL,
+  `nama` varchar(200) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `operasional` (
+  `idoperasional` bigint(20) NOT NULL,
+  `idTrans` int(11) DEFAULT NULL,
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `tanggal` date DEFAULT NULL,
+  `waktu` time DEFAULT NULL,
+  `kasir` varchar(50) DEFAULT NULL,
+  `kategori` varchar(50) DEFAULT NULL,
+  `keterangan` varchar(500) DEFAULT NULL,
+  `debet` double(15,3) DEFAULT '0.000',
+  `kredit` double(15,3) DEFAULT '0.000',
+  `fakturpay` varchar(50) DEFAULT NULL,
+  `saldoawaltagihan` double(15,3) DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `pindahgudang` (
+  `IDpindahgudang` int(11) unsigned NOT NULL,
+  `docno` varchar(30) NOT NULL DEFAULT '',
+  `doctgl` date NOT NULL,
+  `IDgudang` int(11) NOT NULL,
+  `IDgudangto` int(11) NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `IDuserposted` int(11) DEFAULT NULL,
+  `usernameposted` varchar(50) DEFAULT '',
+  `posted` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `pindahgudangdet` (
+  `IDpindahgudang` int(11) unsigned NOT NULL,
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `pindahgudangdetform` (
+  `ipv` varchar(50) NOT NULL DEFAULT '',
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `prodbuf` (
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `barcode` varchar(80) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `satuan` varchar(20) DEFAULT NULL,
+  `hargabeli` double(15,3) DEFAULT '0.000',
+  `hargajual` double(15,3) DEFAULT '0.000',
+  `kodegol` varchar(20) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB;';
+
+CREATE TABLE `product` (
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `merk` varchar(50) DEFAULT NULL,
+  `seri` varchar(50) DEFAULT NULL,
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `IDgolongan` int(11) NOT NULL,
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000',
+  `keterangan` varchar(255) DEFAULT NULL,
+  `tglnoneffective` date DEFAULT NULL,
+  `diskon` float(9,3) NOT NULL DEFAULT '0.000',
+  `diskonrp` double(15,3) NOT NULL DEFAULT '0.000',
+  `barcode` varchar(80) DEFAULT NULL,
+  `SL` double(15,3) NOT NULL DEFAULT '0.000',
+  `SLT` double(15,3) NOT NULL DEFAULT '0.000',
+  `CT` double(15,3) NOT NULL DEFAULT '0.000',
+  `CTT` double(15,3) NOT NULL DEFAULT '0.000',
+  `CB` double(15,3) NOT NULL DEFAULT '0.000',
+  `CBT` double(15,3) NOT NULL DEFAULT '0.000',
+  `SLR` double(15,3) NOT NULL DEFAULT '0.000',
+  `CTR` double(15,3) NOT NULL DEFAULT '0.000',
+  `CBR` double(15,3) NOT NULL DEFAULT '0.000',
+  `reorderqty` double(15,3) NOT NULL DEFAULT '0.000',
+  `expdate` date DEFAULT NULL,
+  `CP` double(15,3) NOT NULL DEFAULT '0.000',
+  `CPT` double(15,3) NOT NULL DEFAULT '0.000',
+  `CPR` double(15,3) NOT NULL DEFAULT '0.000',
+  `isin60hr` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB; (`kodepromo`) REFER `sparepart2/promo`(`kode`) ON UPDATE ';
+
+CREATE TABLE `productgudang` (
+  `IDproduct` int(11) unsigned NOT NULL,
+  `IDgudang` int(11) NOT NULL,
+  `qty` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `purchaseorder` (
+  `IDpurchaseorder` int(11) unsigned NOT NULL,
+  `IDsupplier` int(11) NOT NULL,
+  `pono` varchar(50) NOT NULL DEFAULT '',
+  `tgl` date NOT NULL,
+  `totalprice` double(15,3) NOT NULL DEFAULT '0.000',
+  `notes` varchar(500) DEFAULT NULL,
+  `IDuserposted` int(11) DEFAULT NULL,
+  `usernameposted` varchar(50) DEFAULT NULL,
+  `posted` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `purchaseorderdet` (
+  `IDpurchaseorder` int(11) unsigned NOT NULL,
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `purchaseorderdetform` (
+  `ipv` varchar(50) NOT NULL DEFAULT '',
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `reportrugilaba` (
+  `idrugilaba` int(11) NOT NULL,
+  `tanggal` date DEFAULT NULL,
+  `keterangan` varchar(255) DEFAULT NULL,
+  `labakotor` double(15,3) DEFAULT '0.000',
+  `operasional` double(15,3) DEFAULT '0.000',
+  `pajak` double(15,3) DEFAULT '0.000',
+  `ipv` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `returbelidetail` (
+  `idReturBeli` int(11) NOT NULL,
+  `faktur` varchar(50) DEFAULT NULL,
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `kategori` varchar(50) DEFAULT NULL,
+  `merk` varchar(50) DEFAULT NULL,
+  `seri` varchar(50) DEFAULT NULL,
+  `keterangan` text,
+  `qtybeli` double(15,3) DEFAULT '0.000',
+  `qtyretur` double(15,3) DEFAULT '0.000',
+  `hargabeli` double(15,3) DEFAULT '0.000',
+  `diskon` float(9,3) DEFAULT NULL,
+  `diskon_rp` double(15,3) DEFAULT '0.000',
+  `diskonrp` double(15,3) DEFAULT '0.000',
+  `satuan` varchar(20) DEFAULT NULL,
+  `kodegudang` varchar(10) DEFAULT NULL,
+  `subtotal` double(15,3) DEFAULT '0.000',
+  `fakturbeli` varchar(50) DEFAULT NULL,
+  `hargajual` double(15,3) DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `returbelimaster` (
+  `idReturBeli` int(11) NOT NULL,
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `tanggal` date DEFAULT NULL,
+  `waktu` time DEFAULT NULL,
+  `operator` varchar(50) DEFAULT NULL,
+  `fakturbeli` varchar(50) DEFAULT NULL,
+  `noinvoice` varchar(50) DEFAULT NULL,
+  `kodesupplier` varchar(20) DEFAULT NULL,
+  `supplier` varchar(100) DEFAULT NULL,
+  `alamat` varchar(250) DEFAULT NULL,
+  `kota` varchar(100) DEFAULT NULL,
+  `totaltrans` double(15,3) DEFAULT '0.000',
+  `subtotal` double(15,3) DEFAULT '0.000',
+  `ppn` double(15,3) DEFAULT '0.000',
+  `totalretur` double(15,3) DEFAULT '0.000',
+  `lunas` tinyint(1) DEFAULT '0',
+  `isposted` tinyint(1) DEFAULT '0' COMMENT '-1 = batal posting\r\n0 = belum posting\r\n1 = sudah posting',
+  `pembayaran` varchar(20) DEFAULT NULL,
+  `checked` tinyint(1) DEFAULT '0',
+  `kodegudang` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `returjualdetail` (
+  `idReturJual` int(11) NOT NULL,
+  `faktur` varchar(50) DEFAULT NULL,
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `kategori` varchar(50) DEFAULT NULL,
+  `merk` varchar(50) DEFAULT NULL,
+  `seri` varchar(50) DEFAULT NULL,
+  `keterangan` varchar(255) DEFAULT NULL,
+  `qtyjual` double(15,3) DEFAULT '0.000',
+  `qtyretur` double(15,3) DEFAULT '0.000',
+  `hargajual` double(15,3) DEFAULT '0.000',
+  `diskon` float(9,3) DEFAULT '0.000',
+  `diskon_rp` double(15,3) DEFAULT '0.000',
+  `diskonrp` double(15,3) DEFAULT '0.000',
+  `satuan` varchar(20) DEFAULT NULL,
+  `fakturjual` varchar(50) DEFAULT NULL,
+  `kodegudang` varchar(10) DEFAULT NULL,
+  `hargabeli` double(15,3) DEFAULT '0.000',
+  `subtotal` double(15,3) DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `returjualmaster` (
+  `idReturJual` int(11) NOT NULL,
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `tanggal` date DEFAULT NULL,
+  `waktu` time DEFAULT NULL,
+  `operator` varchar(50) DEFAULT NULL,
+  `kodecustomer` varchar(20) DEFAULT NULL,
+  `customer` varchar(100) DEFAULT NULL,
+  `alamat` varchar(250) DEFAULT NULL,
+  `kota` varchar(100) DEFAULT NULL,
+  `totaltrans` double(15,3) DEFAULT '0.000',
+  `subtotal` double(15,3) NOT NULL DEFAULT '0.000',
+  `ppn` double(15,3) NOT NULL DEFAULT '0.000',
+  `totalretur` double(15,3) DEFAULT '0.000',
+  `lunas` tinyint(1) DEFAULT '0',
+  `fakturjual` varchar(50) NOT NULL DEFAULT '',
+  `isposted` tinyint(1) DEFAULT '0' COMMENT '-1 = batal posting\r\n0 = belum posting\r\n1 = sudah posting',
+  `pembayaran` varchar(20) DEFAULT NULL,
+  `checked` tinyint(1) DEFAULT '0',
+  `kodegudang` varchar(10) NOT NULL DEFAULT 'TK',
+  `returpajakno` varchar(20) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `rusakdetail` (
+  `faktur` varchar(50) DEFAULT NULL,
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `kategori` varchar(50) DEFAULT NULL,
+  `merk` varchar(50) DEFAULT NULL,
+  `seri` varchar(50) DEFAULT NULL,
+  `quantity` double(15,3) DEFAULT '0.000',
+  `satuan` varchar(20) DEFAULT NULL,
+  `idrusak` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `rusakmaster` (
+  `idrusak` int(11) NOT NULL,
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `tanggal` date DEFAULT NULL,
+  `waktu` time DEFAULT NULL,
+  `kasir` varchar(50) DEFAULT NULL,
+  `isposted` tinyint(1) DEFAULT '0' COMMENT '-1 = batal posting\r\n0 = belum posting\r\n1 = sudah posting'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `sales` (
+  `idsales` int(11) NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `alamat` varchar(255) DEFAULT NULL,
+  `kota` varchar(100) DEFAULT NULL,
+  `tgllahir` date DEFAULT NULL,
+  `tempatlahir` varchar(100) DEFAULT NULL,
+  `tglmasuk` date DEFAULT NULL,
+  `noktp` varchar(50) DEFAULT NULL,
+  `tglnoneffective` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `selldetail` (
+  `faktur` varchar(50) DEFAULT NULL,
+  `kode` varchar(20) DEFAULT NULL,
+  `nama` varchar(100) DEFAULT NULL,
+  `kategori` varchar(50) DEFAULT NULL,
+  `merk` varchar(50) DEFAULT NULL,
+  `seri` varchar(50) DEFAULT NULL,
+  `hargajual` double(15,3) DEFAULT '0.000',
+  `diskon` float(9,3) DEFAULT '0.000',
+  `diskonrp` double(15,3) DEFAULT '0.000',
+  `diskon_rp` double(15,3) NOT NULL DEFAULT '0.000',
+  `quantity` double(15,3) DEFAULT '0.000',
+  `hargabeli` double(15,3) DEFAULT '0.000',
+  `satuan` varchar(20) DEFAULT NULL,
+  `subtotal` double(15,3) DEFAULT '0.000',
+  `isposted` tinyint(1) DEFAULT '1',
+  `idstts` tinyint(4) DEFAULT '0' COMMENT '0 = Value\r\n1 = Free\r\n2 = Tukar',
+  `idsell` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB;';
+
+CREATE TABLE `sellmaster` (
+  `idsell` int(11) NOT NULL,
+  `IDcustomer` int(11) NOT NULL,
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `tanggal` date DEFAULT NULL,
+  `waktu` time DEFAULT NULL,
+  `kasir` varchar(50) DEFAULT NULL,
+  `subtotal` double(15,3) DEFAULT '0.000',
+  `discbulat` double(15,3) DEFAULT '0.000',
+  `grandtotal` double(15,3) DEFAULT '0.000',
+  `bayartunai` double(15,3) DEFAULT '0.000',
+  `bayarcard` double(15,3) DEFAULT '0.000',
+  `cardbank` varchar(50) DEFAULT NULL,
+  `cardno` varchar(50) DEFAULT NULL,
+  `cardname` varchar(100) DEFAULT NULL,
+  `kembali` double(15,3) DEFAULT '0.000',
+  `isposted` tinyint(1) DEFAULT '0',
+  `lunas` tinyint(1) DEFAULT '0',
+  `totalpayment` double(15,3) DEFAULT '0.000',
+  `bayarskrg` double(15,3) DEFAULT '0.000',
+  `checked` tinyint(1) DEFAULT '0',
+  `keterangan` varchar(500) DEFAULT NULL,
+  `ppn` double(15,3) NOT NULL DEFAULT '0.000',
+  `fakturpajakno` varchar(80) DEFAULT NULL,
+  `totalretur` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `sellpayment` (
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `kodecustomer` varchar(20) NOT NULL DEFAULT '',
+  `customer` varchar(100) DEFAULT NULL,
+  `tanggal` date NOT NULL,
+  `waktu` time NOT NULL,
+  `kasir` varchar(50) DEFAULT NULL,
+  `transfer` double(15,3) DEFAULT '0.000',
+  `tunai` double(15,3) DEFAULT '0.000',
+  `bg` double(15,3) DEFAULT '0.000',
+  `totalpiutangfaktur` double(15,3) DEFAULT '0.000',
+  `totalretur` double(15,3) DEFAULT '0.000',
+  `diskonrp` double(15,3) DEFAULT '0.000',
+  `tanggalinput` date NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `isposted` tinyint(1) DEFAULT '0',
+  `saldo_piutang` double(15,3) DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `sellpaymentbg` (
+  `faktur` varchar(50) NOT NULL DEFAULT '',
+  `tgl` date DEFAULT NULL,
+  `transfer` double(15,3) DEFAULT '0.000',
+  `bg` double(15,3) DEFAULT '0.000',
+  `bgno` varchar(50) DEFAULT NULL,
+  `bgbank` varchar(200) DEFAULT NULL,
+  `bgtempo` date DEFAULT NULL,
+  `tobank` varchar(200) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `struk` (
+  `IDstruk` tinyint(4) NOT NULL,
+  `company` varchar(150) DEFAULT NULL,
+  `alamat` varchar(255) DEFAULT NULL,
+  `kota` varchar(100) DEFAULT NULL,
+  `cabang` varchar(100) DEFAULT NULL,
+  `footer1` varchar(255) DEFAULT NULL,
+  `footer2` varchar(255) DEFAULT NULL,
+  `footer3` varchar(255) DEFAULT NULL,
+  `footer4` varchar(255) DEFAULT NULL,
+  `footer5` varchar(255) DEFAULT NULL,
+  `endfooter1` varchar(255) DEFAULT NULL,
+  `endfooter2` varchar(255) DEFAULT NULL,
+  `endfooter3` varchar(255) DEFAULT NULL,
+  `mintrans` double(15,3) NOT NULL DEFAULT '0.000',
+  `isaktif` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `supplier` (
+  `IDsupplier` int(11) NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) DEFAULT NULL,
+  `alamat` varchar(250) DEFAULT NULL,
+  `alamat2` varchar(255) DEFAULT NULL,
+  `kota` varchar(100) DEFAULT NULL,
+  `kota2` varchar(100) DEFAULT NULL,
+  `kodepos` varchar(10) DEFAULT NULL,
+  `telephone` varchar(50) DEFAULT NULL,
+  `telephone2` varchar(50) DEFAULT NULL,
+  `fax` varchar(50) DEFAULT NULL,
+  `rekening` varchar(50) DEFAULT NULL,
+  `hp` varchar(30) DEFAULT NULL,
+  `hp2` varchar(30) DEFAULT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `tglnoneffective` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `terimagudang` (
+  `IDterimagudang` int(11) unsigned NOT NULL,
+  `docno` varchar(30) NOT NULL DEFAULT '',
+  `doctgl` date NOT NULL,
+  `IDgudangfrom` int(11) NOT NULL,
+  `IDgudang` int(11) NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `IDuserposted` int(11) DEFAULT NULL,
+  `usernameposted` varchar(50) DEFAULT '',
+  `posted` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `terimagudangdet` (
+  `IDterimagudang` int(11) unsigned NOT NULL,
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `terimagudangdetform` (
+  `ipv` varchar(50) NOT NULL DEFAULT '',
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `terimapurchase` (
+  `IDterimapurchase` int(11) NOT NULL,
+  `docno` varchar(30) NOT NULL DEFAULT '',
+  `doctgl` date NOT NULL,
+  `pono` varchar(50) DEFAULT NULL,
+  `invoiceno` varchar(50) DEFAULT NULL,
+  `IDgudang` int(11) NOT NULL,
+  `totalprice` double(15,3) NOT NULL DEFAULT '0.000',
+  `notes` varchar(500) DEFAULT NULL,
+  `IDuserposted` int(11) DEFAULT NULL,
+  `usernameposted` varchar(50) DEFAULT '',
+  `posted` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `terimapurchasedet` (
+  `IDterimapurchase` int(11) NOT NULL,
+  `IDproduct` int(11) NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `terimapurchasedetform` (
+  `ipv` varchar(50) NOT NULL DEFAULT '',
+  `IDproduct` int(11) NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `qty` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `ubahharga` (
+  `IDubahharga` int(11) unsigned NOT NULL,
+  `docno` varchar(30) NOT NULL DEFAULT '',
+  `doctgl` date NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `IDuserposted` int(11) DEFAULT NULL,
+  `usernameposted` varchar(50) DEFAULT NULL,
+  `posted` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `ubahhargadet` (
+  `IDubahharga` int(11) unsigned NOT NULL,
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajualbaru` double(15,3) NOT NULL DEFAULT '0.000',
+  `tglberlaku` date NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `ubahhargadetform` (
+  `ipv` varchar(50) NOT NULL DEFAULT '',
+  `IDproduct` int(11) unsigned NOT NULL,
+  `kode` varchar(20) NOT NULL DEFAULT '',
+  `nama` varchar(100) NOT NULL DEFAULT '',
+  `satuan` varchar(20) NOT NULL DEFAULT '',
+  `hargabeli` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajual` double(15,3) NOT NULL DEFAULT '0.000',
+  `hargajualbaru` double(15,3) DEFAULT '0.000',
+  `tglberlaku` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `user` (
+  `IDuser` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL DEFAULT '',
+  `password` varchar(20) DEFAULT NULL,
+  `IDusergroup` int(11) NOT NULL,
+  `usergroup` varchar(80) NOT NULL DEFAULT '',
+  `tglnoneffective` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';
+
+CREATE TABLE `usergroup` (
+  `IDusergroup` int(11) NOT NULL,
+  `usergroup` varchar(80) NOT NULL DEFAULT '',
+  `isedit` tinyint(1) NOT NULL DEFAULT '0',
+  `isdel` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `usergroupmenu` (
+  `IDusergroup` int(11) NOT NULL,
+  `IDmenu` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `usergroupold` (
+  `IDusergroup` int(11) NOT NULL,
+  `usergroup` varchar(80) NOT NULL DEFAULT '',
+  `isitem` tinyint(1) NOT NULL DEFAULT '0',
+  `iscustomer` tinyint(1) NOT NULL DEFAULT '0',
+  `issales` tinyint(1) NOT NULL DEFAULT '0',
+  `issupplier` tinyint(1) NOT NULL DEFAULT '0',
+  `ispenjualan` tinyint(1) NOT NULL DEFAULT '0',
+  `isretur` tinyint(1) NOT NULL DEFAULT '0',
+  `ispembelian` tinyint(1) NOT NULL DEFAULT '0',
+  `isreturpembelian` tinyint(1) NOT NULL DEFAULT '0',
+  `ispiutang` tinyint(1) NOT NULL DEFAULT '0',
+  `ishutang` tinyint(1) NOT NULL DEFAULT '0',
+  `isadjust` tinyint(1) NOT NULL DEFAULT '0',
+  `islistpenjualan` tinyint(1) NOT NULL DEFAULT '0',
+  `islistretur` tinyint(1) NOT NULL DEFAULT '0',
+  `islistpembelian` tinyint(1) NOT NULL DEFAULT '0',
+  `islistreturpembelian` tinyint(1) NOT NULL DEFAULT '0',
+  `isoperasional` tinyint(1) NOT NULL DEFAULT '0',
+  `isbackup` tinyint(1) NOT NULL DEFAULT '0',
+  `isrestore` tinyint(1) NOT NULL DEFAULT '0',
+  `isuser` tinyint(1) NOT NULL DEFAULT '0',
+  `isusergroup` tinyint(1) NOT NULL DEFAULT '0',
+  `ischangepassword` tinyint(1) NOT NULL DEFAULT '0',
+  `ispindahgudang` tinyint(1) NOT NULL DEFAULT '0',
+  `islistpindahgudang` tinyint(1) NOT NULL DEFAULT '0',
+  `isgolongan` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `wilayah` (
+  `kodewilayah` varchar(2) NOT NULL DEFAULT '',
+  `namawilayah` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 731136 kB';

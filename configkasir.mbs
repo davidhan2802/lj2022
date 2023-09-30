@@ -1,0 +1,28 @@
+[Working Date]
+2011-04-01
+
+[Status]
+Nama Cabang = 
+IP Server = 192.168.0.1
+Alamat = JL. CITEUREUP
+         
+Telp = 
+Fax = 
+Kota = Citeureup
+Wilayah = Jawa Barat
+
+[Printers]
+Struk Printer = 
+Report Printer = 
+
+[stand]
+Pos = 06
+
+[Gudang]
+Gdg = CT
+
+[Folder Pindah Gudang]
+Loc = D:/M Plus/file pindah gudang
+
+[Access DB Location]
+DBA = D:\M Plus\cetak.mdb

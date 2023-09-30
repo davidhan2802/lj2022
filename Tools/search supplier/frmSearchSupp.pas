@@ -1,0 +1,213 @@
+unit frmSearchSupp;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, RzButton, RzRadChk, RzEdit, Grids, DBGrids, RzDBGrid, StdCtrls,
+  Mask, AdvSmoothButton, RzCmboBx, RzLabel, RzStatus, ExtCtrls, RzPanel, Db;
+
+type
+  TfrmSrcSupp = class(TForm)
+    PanelProd: TRzPanel;
+    RzPanel2: TRzPanel;
+    SellLblCaption: TRzLabel;
+    SearchDBGrid: TRzDBGrid;
+    RzGroupBox4: TRzGroupBox;
+    RzLabel44: TRzLabel;
+    RzLabel45: TRzLabel;
+    RzLabel46: TRzLabel;
+    RzLabel47: TRzLabel;
+    SearchBtnSearch: TAdvSmoothButton;
+    SearchTxtSearch: TRzEdit;
+    SearchTxtSearchBy: TRzComboBox;
+    SearchBtnClear: TAdvSmoothButton;
+    RzPanel7: TRzPanel;
+    SearchBtnAdd: TAdvSmoothButton;
+    RzLabel12: TRzLabel;
+    SearchBtnClose: TAdvSmoothButton;
+    RzLabel14: TRzLabel;
+    procedure SearchBtnSearchClick(Sender: TObject);
+    procedure SearchBtnClearClick(Sender: TObject);
+    procedure SearchBtnCloseClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure SearchDBGridKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure SearchDBGridDblClick(Sender: TObject);
+    procedure SearchTxtSearchKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure SearchTxtSearchByChange(Sender: TObject);
+    procedure SearchTxtSearchChange(Sender: TObject);
+    procedure SearchBtnAddClick(Sender: TObject);
+  private
+    SearchCategories: string;
+    { Private declarations }
+  public
+    formSender : TForm;
+    { Public declarations }
+  end;
+
+var
+  frmSrcSupp: TfrmSrcSupp;
+  tampsearchtxt: string;
+
+implementation
+
+uses SparePartFunction, frmbuying, frmReturBeli, Data;
+
+{$R *.dfm}
+
+
+procedure TfrmSrcSupp.FormShow(Sender: TObject);
+begin
+  tampsearchtxt := '';
+  SearchTxtSearch.SetFocus;
+
+  SearchBtnClearClick(Self);
+end;
+
+procedure TfrmSrcSupp.SearchBtnSearchClick(Sender: TObject);
+begin
+  if Trim(SearchTxtSearch.Text) = '' then Exit;
+  SearchTxtSearchByChange(Self);
+  with DataModule1.ZQrySearchSupp do
+  begin
+    Close;
+      SQL.Strings[0] := 'select c.IDsupplier,c.kode,c.nama,c.alamat,c.kota,c.telephone,c.hp from supplier c where c.tglnoneffective is null and c.' + SearchCategories + ' like ' + QuotedStr(SearchTxtSearch.Text + '%');
+      SQL.Strings[1] := 'order by c.' + SearchCategories;
+    Open;
+  end;
+end;
+
+procedure TfrmSrcSupp.SearchBtnClearClick(Sender: TObject);
+begin
+  SearchTxtSearch.Text:='';
+  SearchTxtSearchByChange(Self);
+  with DataModule1.ZQrySearchSupp do
+  begin
+    Close;
+      SQL.Strings[0] := 'select c.IDsupplier,c.kode,c.nama,c.alamat,c.kota,c.telephone,c.hp from supplier c where c.tglnoneffective is null ';
+      SQL.Strings[1] := 'order by c.' + SearchCategories;
+    Open;
+  end;
+end;
+
+procedure TfrmSrcSupp.SearchBtnCloseClick(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TfrmSrcSupp.SearchDBGridKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if (Key = VK_RETURN) then
+    SearchBtnAddClick(Self);
+  if (Key = VK_ESCAPE) then
+    SearchBtnCloseClick(Self);
+end;
+
+procedure TfrmSrcSupp.SearchDBGridDblClick(Sender: TObject);
+begin
+  SearchBtnAddClick(Self);
+end;
+
+procedure TfrmSrcSupp.SearchTxtSearchKeyDown(Sender: TObject;
+  var Key: Word; Shift: TShiftState);
+begin
+  if (Key = VK_RETURN) then SearchBtnAddClick(Self);
+  if (Key = VK_ESCAPE) then SearchBtnCloseClick(Self);
+
+  if (Key = VK_UP) and (DataModule1.ZQrySearchSupp.Bof = False) then
+    DataModule1.ZQrySearchSupp.Prior
+  else
+  if (Key = VK_DOWN) and (DataModule1.ZQrySearchSupp.Eof = False) then
+    DataModule1.ZQrySearchSupp.Next
+  else
+  if (Key = VK_PRIOR) and (DataModule1.ZQrySearchSupp.Bof = False) then
+    DataModule1.ZQrySearchSupp.MoveBy(-12)
+  else
+  if (Key = VK_NEXT) and (DataModule1.ZQrySearchSupp.Eof = False) then
+    DataModule1.ZQrySearchSupp.MoveBy(12)
+  else
+    Exit;
+end;
+
+procedure TfrmSrcSupp.SearchTxtSearchByChange(Sender: TObject);
+begin
+  case SearchTxtSearchBy.ItemIndex of
+  0 : SearchCategories := 'kode';
+  1 : SearchCategories := 'nama';
+  2 : SearchCategories := 'alamat';
+  3 : SearchCategories := 'kota';
+  end;
+end;
+
+procedure TfrmSrcSupp.SearchTxtSearchChange(Sender: TObject);
+begin
+  if (tampsearchtxt <> SearchTxtSearch.Text) then
+  begin
+    tampsearchtxt := SearchTxtSearch.Text;
+    if Trim(SearchTxtSearch.Text) <> '' then
+    begin
+      SearchBtnSearchClick(Self);
+    end
+    else
+    begin
+      SearchBtnClearClick(Self);
+    end;
+  end;
+
+end;
+
+procedure TfrmSrcSupp.SearchBtnAddClick(Sender: TObject);
+begin
+ if formSender = frmRtrBeli then
+ begin
+  frmRtrBeli.vkodesupp := '';
+  frmRtrBeli.RtrBeliTxtFaktur.Text := '';
+  frmRtrBeli.sellTxtalamat.Clear;
+ end;
+
+ if formSender = frmBuy then
+ begin
+  frmbuy.vidsupp := -1;
+  frmbuy.vkodesupp := '';
+  frmbuy.valamat := '';
+  frmbuy.vkota   := '';
+  frmbuy.SellTxtSupplier.Text := '';
+  frmbuy.sellTxtalamat.Clear;
+ end;
+
+ if  Datamodule1.ZQrySearchSupp.IsEmpty then exit;
+
+ if formSender = frmRtrBeli then
+ begin
+  frmRtrBeli.vkodesupp := Datamodule1.ZQrySearchSuppkode.Value;
+  frmRtrBeli.RtrBeliTxtSupplier.Text := Datamodule1.ZQrySearchSuppnama.Value;
+
+  frmRtrBeli.RtrBeliTxtFaktur.Text := frmRtrBeli.getNoRetur;
+
+  frmRtrBeli.sellTxtalamat.Clear;
+  frmRtrBeli.sellTxtalamat.Lines.Add(Datamodule1.ZQrySearchSuppalamat.AsString);
+  frmRtrBeli.sellTxtalamat.Lines.Add(Datamodule1.ZQrySearchSuppkota.AsString);
+
+  SearchBtnCloseClick(Self);
+ end;
+
+ if formSender = frmBuy then
+ begin
+  frmbuy.vidsupp := Datamodule1.ZQrySearchSuppIDsupplier.Value;
+  frmbuy.vkodesupp := Datamodule1.ZQrySearchSuppkode.Value;
+  frmbuy.valamat := Datamodule1.ZQrySearchSuppalamat.AsString;
+  frmbuy.vkota   := Datamodule1.ZQrySearchSuppkota.AsString;
+  frmbuy.SellTxtSupplier.Text := Datamodule1.ZQrySearchSuppnama.Value;
+  frmbuy.sellTxtalamat.Clear;
+  frmbuy.sellTxtalamat.Lines.Add(Datamodule1.ZQrySearchSuppalamat.AsString);
+  frmbuy.sellTxtalamat.Lines.Add(Datamodule1.ZQrySearchSuppkota.AsString);
+
+  SearchBtnCloseClick(Self);
+ end;
+
+end;
+
+end.

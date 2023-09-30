@@ -1,0 +1,25 @@
+[Working Date]
+2011-04-01
+
+[Status]
+Nama Cabang = ALL
+IP Server = localhost
+Alamat = JL. ANYAR DUWET NO.17A SEMARANG
+         
+Telp = 
+Fax = 
+Kota = Semarang
+Wilayah = Jawa Tengah
+
+[Printers]
+Struk Printer = USB002
+Report Printer = 
+
+[stand]
+Pos = 01
+
+[Gudang]
+Gdg = UT
+
+[Folder Pindah Gudang]
+Loc = F:/Projects/My Project/UD. Lautan Jaya/LJ 2022/Pindah Gudang

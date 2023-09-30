@@ -1,0 +1,137 @@
+object FLogin: TFLogin
+  Left = 454
+  Top = 220
+  BorderStyle = bsNone
+  Caption = 'FLogin'
+  ClientHeight = 211
+  ClientWidth = 355
+  Color = clOlive
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poScreenCenter
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
+  PixelsPerInch = 96
+  TextHeight = 13
+  object RzPanel1: TRzPanel
+    Left = 0
+    Top = 0
+    Width = 355
+    Height = 211
+    Align = alClient
+    BorderInner = fsFlatBold
+    BorderOuter = fsFlatBold
+    BorderColor = clBlack
+    BorderHighlight = clBlack
+    BorderShadow = clBlack
+    BorderWidth = 2
+    GradientColorStyle = gcsCustom
+    GradientColorStart = clNavy
+    GradientColorStop = 16734553
+    GradientDirection = gdDiagonalDown
+    TabOrder = 0
+    VisualStyle = vsGradient
+    object RzLabel1: TRzLabel
+      Left = 32
+      Top = 55
+      Width = 82
+      Height = 13
+      Caption = 'User Name'
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -13
+      Font.Name = 'Courier'
+      Font.Style = [fsBold]
+      ParentFont = False
+      Transparent = True
+      BlinkIntervalOff = 2000
+      BlinkIntervalOn = 1000
+    end
+    object RzLabel2: TRzLabel
+      Left = 32
+      Top = 96
+      Width = 73
+      Height = 13
+      Caption = 'Password'
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -13
+      Font.Name = 'Courier'
+      Font.Style = [fsBold]
+      ParentFont = False
+      Transparent = True
+      BlinkIntervalOff = 2000
+      BlinkIntervalOn = 1000
+    end
+    object edtPasswd: TRzEdit
+      Left = 160
+      Top = 88
+      Width = 169
+      Height = 28
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsBold]
+      FrameColor = 33023
+      FrameVisible = True
+      ParentFont = False
+      PasswordChar = '*'
+      TabOrder = 1
+      OnKeyDown = edtPasswdKeyDown
+    end
+    object btnOK: TRzBitBtn
+      Left = 159
+      Top = 134
+      Width = 57
+      Height = 49
+      Hint = 'Masuk'
+      FrameColor = 7617536
+      Color = 15791348
+      HotTrack = True
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 2
+      OnClick = btnOKClick
+      ImageIndex = 37
+      Images = DataModule1.ImageList1
+    end
+    object btnKluar: TRzBitBtn
+      Left = 226
+      Top = 134
+      Width = 57
+      Height = 49
+      Hint = 'Keluar'
+      FrameColor = 7617536
+      Color = 15791348
+      HotTrack = True
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 3
+      OnClick = btnKluarClick
+      ImageIndex = 16
+      Images = DataModule1.ImageList1
+    end
+    object edt_user: TRzEdit
+      Left = 160
+      Top = 48
+      Width = 169
+      Height = 28
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsBold]
+      FrameColor = 33023
+      FrameVisible = True
+      ParentFont = False
+      TabOrder = 0
+      OnKeyDown = edtPasswdKeyDown
+    end
+  end
+end

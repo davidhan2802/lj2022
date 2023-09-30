@@ -1,0 +1,309 @@
+unit frmSupplier;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ExtCtrls, StdCtrls, RzCmboBx, Mask, RzEdit, RzPanel,
+  AdvSmoothButton, Grids, DBGrids, RzDBGrid, RzLabel, ExtDlgs, JPEG,
+  RzChkLst, RzLstBox, DB, RzButton, RzRadChk;
+
+type
+  TfrmSupp = class(TForm)
+    PanelCust: TRzPanel;
+    RzPanel2: TRzPanel;
+    CustLblCaption: TRzLabel;
+    RzPanel3: TRzPanel;
+    RzLabel12: TRzLabel;
+    RzLabel14: TRzLabel;
+    CustBtnAdd: TAdvSmoothButton;
+    CustBtnDel: TAdvSmoothButton;
+    RzLabel1: TRzLabel;
+    RzLabel2: TRzLabel;
+    RzLabel3: TRzLabel;
+    RzLabel4: TRzLabel;
+    RzLabel5: TRzLabel;
+    RzLabel6: TRzLabel;
+    RzLabel7: TRzLabel;
+    CustTxtAlamat: TRzMemo;
+    CustTxtKota: TRzEdit;
+    CustTxtPhone: TRzEdit;
+    CustTxtFax: TRzEdit;
+    CustTxtPos: TRzEdit;
+    CustTxtKode: TRzEdit;
+    CustTxtNama: TRzEdit;
+    RzLabel10: TRzLabel;
+    CustTxtPhone2: TRzEdit;
+    RzLabel11: TRzLabel;
+    RzLabel13: TRzLabel;
+    CustTxthp: TRzEdit;
+    CustTxthp2: TRzEdit;
+    RzLabel16: TRzLabel;
+    CustTxtAlamat2: TRzMemo;
+    RzLabel17: TRzLabel;
+    CustTxtnotes: TRzMemo;
+    RzLabel19: TRzLabel;
+    CustTxtKota2: TRzEdit;
+    JasaLblNonEfektif: TRzLabel;
+    CustTxtNonEfektif: TRzDateTimeEdit;
+    RzLabel20: TRzLabel;
+    CustTxtRekening: TRzEdit;
+    procedure FormActivate(Sender: TObject);
+    procedure CustBtnAddClick(Sender: TObject);
+    procedure CustBtnDelClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+  private
+    procedure InsertData;
+    procedure UpdateData;
+    { Private declarations }
+  public
+    { Public declarations }
+    procedure FormShowFirst;
+  end;
+
+var
+  frmSupp: TfrmSupp;
+
+implementation
+
+uses SparePartFunction, Data, suppliermaster;
+
+{$R *.dfm}
+
+procedure TfrmSupp.InsertData;
+begin
+  with DataModule1.ZQryFunction do
+  begin
+    Close;
+    SQL.Clear;
+    SQL.Add('insert into supplier');
+    SQL.Add('(kode,nama,alamat,alamat2,kota,kota2,kodepos,telephone,telephone2,hp,hp2,fax,notes,rekening,tglnoneffective) values ');
+    SQL.Add('(' + QuotedStr(CustTxtKode.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtNama.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtAlamat.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtAlamat2.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtKota.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtKota2.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtPos.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtPhone.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtPhone2.Text) + ',');
+    SQL.Add(QuotedStr(CustTxthp.Text) + ',');
+    SQL.Add(QuotedStr(CustTxthp2.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtFax.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtnotes.Text) + ',');
+    SQL.Add(QuotedStr(CustTxtrekening.Text) + ',');
+
+    if CustTxtNonEfektif.Text = '' then
+      SQL.Add('null)')
+    else
+      SQL.Add(QuotedStr(FormatDateTime('yyyy-MM-dd',CustTxtNonEfektif.Date)) + ')');
+
+    ExecSQL;
+
+  end;
+end;
+
+procedure TfrmSupp.UpdateData;
+begin
+  with DataModule1.ZQryFunction do
+  begin
+    Close;
+    SQL.Clear;
+    SQL.Add('update supplier set');
+    SQL.Add('nama = ' + QuotedStr(CustTxtNama.Text) + ',');
+    SQL.Add('alamat = ' + QuotedStr(CustTxtAlamat.Text) + ',');
+    SQL.Add('alamat2 = ' + QuotedStr(CustTxtAlamat2.Text) + ',');
+    SQL.Add('kota = ' + QuotedStr(CustTxtKota.Text) + ',');
+    SQL.Add('kota2 = ' + QuotedStr(CustTxtKota2.Text) + ',');
+    SQL.Add('kodepos = ' + QuotedStr(CustTxtPos.Text) + ',');
+    SQL.Add('telephone = ' + QuotedStr(CustTxtPhone.Text) + ',');
+    SQL.Add('telephone2 = ' + QuotedStr(CustTxtPhone2.Text) + ',');
+    SQL.Add('hp = ' + QuotedStr(CustTxthp.Text) + ',');
+    SQL.Add('hp2 = ' + QuotedStr(CustTxthp2.Text) + ',');
+    SQL.Add('notes = ' + QuotedStr(CustTxtnotes.Text) + ',');
+    SQL.Add('fax = ' + QuotedStr(CustTxtFax.Text) + ',');
+    SQL.Add('rekening = ' + QuotedStr(CustTxtrekening.Text) + ',');
+
+    if CustTxtNonEfektif.Text='' then
+       SQL.Add('tglnoneffective = null')
+    else SQL.Add('tglnoneffective = ' + QuotedStr(FormatDateTime('yyyy-MM-dd',CustTxtNonEfektif.Date)) );
+
+    SQL.Add(' where kode = ' + QuotedStr(CustTxtKode.Text));
+    ExecSQL;
+
+  end;
+end;
+
+procedure TfrmSupp.FormActivate(Sender: TObject);
+begin
+{  frmCust.Top := frmsuppliermaster.Panelsupplier.Top + 26;
+  frmCust.Height := frmsuppliermaster.Panelsupplier.Height;
+  frmCust.Width := frmsuppliermaster.Panelsupplier.Width;
+  frmCust.Left := 1; }
+end;
+
+procedure TfrmSupp.FormShowFirst;
+begin
+  if CustLblCaption.Caption = 'Tambah Supplier' then
+  begin
+ //   CustTxtKode.Enabled := True;
+    CustTxtKode.Text := '';
+    CustTxtNama.Text := '';
+    CustTxtAlamat.Text := '';
+    CustTxtAlamat2.Text := '';
+    CustTxtKota.Text := '';
+    CustTxtKota2.Text := '';
+    CustTxtPos.Text := '';
+    CustTxtPhone.Text := '';
+    CustTxtPhone2.Text := '';
+    CustTxthp.Text := '';
+    CustTxthp2.Text := '';
+    CustTxtFax.Text := '';
+    CustTxtrekening.Text := '';
+    CustTxtnotes.Text := '';
+
+    CustTxtNonEfektif.Enabled := False;
+    CustTxtNonEfektif.Text := '';
+
+  end
+  else
+  begin
+    CustTxtKode.Text := '';
+    CustTxtNama.Text := '';
+    CustTxtAlamat.Text := '';
+    CustTxtAlamat2.Text := '';
+    CustTxtKota.Text := '';
+    CustTxtKota2.Text := '';
+    CustTxtPos.Text := '';
+    CustTxtPhone.Text := '';
+    CustTxtPhone2.Text := '';
+    CustTxthp.Text := '';
+    CustTxthp2.Text := '';
+    CustTxtFax.Text := '';
+    CustTxtrekening.Text := '';
+    CustTxtnotes.Text := '';
+
+//    CustTxtKode.Enabled := False;
+    if DataModule1.ZQrysupplierkode.IsNull=false then
+    CustTxtKode.Text := DataModule1.ZQrysupplierkode.Text;
+
+    if DataModule1.ZQrysuppliernama.IsNull=false then
+    CustTxtNama.Text := DataModule1.ZQrysuppliernama.Text;
+
+    if DataModule1.ZQrysupplieralamat.IsNull=false then
+    CustTxtAlamat.Text := DataModule1.ZQrysupplieralamat.Text;
+
+    if DataModule1.ZQrysupplieralamat2.IsNull=false then
+    CustTxtAlamat2.Text := DataModule1.ZQrysupplieralamat2.Text;
+
+    if DataModule1.ZQrysupplierkota.IsNull=false then
+    CustTxtKota.Text := DataModule1.ZQrysupplierkota.Text;
+
+    if DataModule1.ZQrysupplierkota2.IsNull=false then
+    CustTxtKota2.Text := DataModule1.ZQrysupplierkota2.Text;
+
+    if DataModule1.ZQrysupplierkodepos.IsNull=false then
+    CustTxtPos.Text := DataModule1.ZQrysupplierkodepos.Text;
+
+    if DataModule1.ZQrysuppliertelephone.IsNull=false then
+    CustTxtPhone.Text := DataModule1.ZQrysuppliertelephone.Text;
+
+    if DataModule1.ZQrysuppliertelephone2.IsNull=false then
+    CustTxtPhone2.Text := DataModule1.ZQrysuppliertelephone2.Text;
+
+    if DataModule1.ZQrysupplierhp.IsNull=false then
+    CustTxthp.Text := DataModule1.ZQrysupplierhp.Text;
+
+    if DataModule1.ZQrysupplierhp2.IsNull=false then
+    CustTxthp2.Text := DataModule1.ZQrysupplierhp2.Text;
+
+    if DataModule1.ZQrysupplierfax.IsNull=false then
+    CustTxtFax.Text := DataModule1.ZQrysupplierfax.Text;
+
+    if DataModule1.ZQrysupplierrekening.IsNull=false then
+    CustTxtrekening.Text := DataModule1.ZQrysupplierrekening.Text;
+
+    if DataModule1.ZQrysuppliernotes.IsNull=false then
+    CustTxtnotes.Text := DataModule1.ZQrysuppliernotes.Text;
+
+    if DataModule1.ZQrysuppliertglnoneffective.Text <> '' then
+      CustTxtNonEfektif.Date := DataModule1.ZQrysuppliertglnoneffective.Value
+    else
+      CustTxtNonEfektif.Text := '';
+
+  end;
+end;
+
+procedure TfrmSupp.CustBtnAddClick(Sender: TObject);
+var
+  EmptyValue: Boolean;
+begin
+{  if CustTxtKode.Text = '' then
+  begin
+    ErrorDialog('Kode supplier harus diisi!');
+    CustTxtKode.SetFocus;
+    Exit;
+  end;    }
+  if CustTxtNama.Text = '' then
+  begin
+    ErrorDialog('Nama supplier harus diisi!');
+    CustTxtNama.SetFocus;
+    Exit;
+  end;
+
+  with DataModule1.ZQrySearch do
+  begin
+    ///Check if exists
+    Close;
+    SQL.Clear;
+    SQL.Add('select kode from supplier');
+    SQL.Add('where nama = ' + QuotedStr(CustTxtNama.Text)) ;
+//    SQL.Add('where kode = ' + QuotedStr(CustTxtKode.Text) + ' or nama = ' + QuotedStr(CustTxtNama.Text));
+    Open;
+    EmptyValue := IsEmpty;
+  end;
+
+  if CustLblCaption.Caption = 'Tambah Supplier' then
+  begin
+    if EmptyValue = False then
+    begin
+//      InfoDialog('Kode ' + CustTxtKode.Text + ' atau Nama '+CustTxtNama.Text+' sudah terdaftar');
+      InfoDialog('Nama '+CustTxtNama.Text+' sudah terdaftar');
+      Exit;
+    end;
+    InsertData;
+    InfoDialog('Tambah supplier ' + CustTxtNama.Text + ' berhasil');
+//    LogInfo(UserName,'Insert supplier kode: ' + CustTxtKode.Text + ',nama: ' + CustTxtNama.Text);
+    LogInfo(UserName,'Insert supplier nama: ' + CustTxtNama.Text);
+  end
+  else
+  begin
+    UpdateData;
+    InfoDialog('Edit supplier ' + CustTxtNama.Text + ' berhasil');
+//    LogInfo(UserName,'Edit supplier kode: ' + CustTxtKode.Text + ',nama: ' + CustTxtNama.Text);
+    LogInfo(UserName,'Edit supplier nama: ' + CustTxtNama.Text);
+  end;
+
+ // DataModule1.ZQrysupplier.Locate('nama',CustTxtNama.Text,[]);
+
+  Close;
+end;
+
+procedure TfrmSupp.CustBtnDelClick(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TfrmSupp.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+ IF Frmsuppliermaster=nil then
+ application.CreateForm(TFrmsuppliermaster,Frmsuppliermaster);
+ Frmsuppliermaster.Align:=alclient;
+ Frmsuppliermaster.Parent:=Self.Parent;
+ Frmsuppliermaster.BorderStyle:=bsnone;
+ Frmsuppliermaster.FormShowFirst;
+ Frmsuppliermaster.Show;
+
+end;
+
+end.

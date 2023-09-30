@@ -1,0 +1,229 @@
+unit customerdisc;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ExtCtrls, StdCtrls, RzCmboBx, Mask, RzEdit, RzPanel,
+  AdvSmoothButton, Grids, DBGrids, RzDBGrid, RzLabel, ExtDlgs, JPEG, DB,
+  RzButton, RzRadChk;
+
+type
+  Tfrmcustomerdisc = class(TForm)
+    Panelsales: TRzPanel;
+    RzPanel2: TRzPanel;
+    LblCaption: TRzLabel;
+    RzPanel3: TRzPanel;
+    RzLabel12: TRzLabel;
+    RzLabel14: TRzLabel;
+    BtnAdd: TAdvSmoothButton;
+    BtnDel: TAdvSmoothButton;
+    RzLabel2: TRzLabel;
+    RzLabel3: TRzLabel;
+    CustTxtkode: TRzComboBox;
+    CustTxtnama: TRzComboBox;
+    RzLabel1: TRzLabel;
+    CustTxtmerk: TRzComboBox;
+    CustTxtdisc: TRzNumericEdit;
+    RzLabel4: TRzLabel;
+    RzLabel5: TRzLabel;
+    CustTxtKota: TRzEdit;
+    RzLabel6: TRzLabel;
+    procedure FormActivate(Sender: TObject);
+    procedure BtnAddClick(Sender: TObject);
+    procedure BtnDelClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure CustTxtkodeChange(Sender: TObject);
+    procedure CustTxtnamaChange(Sender: TObject);
+  private
+    procedure InsertData;
+    procedure UpdateData;
+    { Private declarations }
+  public
+    { Public declarations }
+    procedure FormShowFirst;
+  end;
+
+var
+  frmcustomerdisc: Tfrmcustomerdisc;
+
+implementation
+
+uses SparePartFunction, Data, customerdiscmaster;
+
+{$R *.dfm}
+
+procedure Tfrmcustomerdisc.InsertData;
+begin
+  with DataModule1.ZQryFunction do
+  begin
+    Close;
+    SQL.Clear;
+    SQL.Add('insert into customerdiskon');
+    SQL.Add('(IDcustomer,merk,disc) values ');
+    SQL.Add('(' + QuotedStr(inttostr(longint(custtxtkode.Items.Objects[custtxtkode.ItemIndex]))) );
+    SQL.Add(',' + QuotedStr(trim(custTxtMerk.Text)) );
+    SQL.Add(',' + QuotedStr(FloatToStr(custtxtdisc.Value)) + ')');
+    ExecSQL;
+  end;
+end;
+
+procedure Tfrmcustomerdisc.UpdateData;
+begin
+  with DataModule1.ZQryFunction do
+  begin
+    Close;
+    SQL.Clear;
+    SQL.Add('update customerdiskon set ');
+    SQL.Add('IDcustomer = ' + QuotedStr(inttostr(longint(custtxtkode.Items.Objects[custtxtkode.ItemIndex]))) + ' ');
+    SQL.Add(',merk = '      + QuotedStr(trim(custTxtMerk.Text)) + ' ');
+    SQL.Add(',disc = '      + QuotedStr(FloatToStr(custtxtdisc.Value)) + ' ');
+    SQL.Add('where id = '   + QuotedStr(DataModule1.ZQryCustomerdiscid.AsString));
+    ExecSQL;
+  end;
+end;
+
+
+procedure Tfrmcustomerdisc.FormActivate(Sender: TObject);
+begin
+{  frmGolongan.Top := frmGolonganmaster.PanelGolongan.Top + 26;
+  frmGolongan.Height := frmGolonganmaster.PanelGolongan.Height;
+  frmGolongan.Width := frmGolonganmaster.PanelGolongan.Width;
+  frmGolongan.Left := 1;     }
+end;
+
+procedure Tfrmcustomerdisc.FormShowFirst;
+begin
+  FillComboBox('distinct merk','product',CustTxtMerk,false,'merk');
+  Fill_ComboBox_with_Data_n_ID(CustTxtkode,'select IDcustomer,kode from customer order by kode','kode','IDcustomer');
+  Fill_ComboBox_with_Data_n_ID(CustTxtnama,'select IDcustomer,nama from customer order by kode','nama','IDcustomer');
+
+  CustTxtKode.itemindex := -1;
+  CustTxtNama.itemindex := -1;
+  CustTxtKode.Text := '';
+  CustTxtNama.Text := '';
+  CustTxtKota.Text := '';
+
+  CustTxtMerk.itemindex := -1;
+  CustTxtMerk.Text := '';
+  CustTxtdisc.Value := 0;
+
+  if LblCaption.Caption = 'Tambah Customer Diskon' then
+  begin
+    CustTxtKode.Enabled := True;
+  end
+  else
+  begin
+    CustTxtKode.Enabled := False;
+
+    if DataModule1.ZQryCustomerdisckode.IsNull=false then
+    CustTxtKode.ItemIndex := CustTxtKode.Items.IndexOf(DataModule1.ZQryCustomerdisckode.Value);
+
+    if DataModule1.ZQryCustomerdiscnama.IsNull=false then
+    CustTxtNama.ItemIndex := CustTxtNama.Items.IndexOf(DataModule1.ZQryCustomerdiscNama.Value);
+
+    if DataModule1.ZQryCustomerdisckota.IsNull=false then
+    CustTxtkota.text := DataModule1.ZQryCustomerdisckota.Value;
+
+    if DataModule1.ZQryCustomerdiscmerk.IsNull=false then
+    CustTxtmerk.ItemIndex := CustTxtmerk.Items.IndexOf(DataModule1.ZQryCustomerdiscmerk.Value);
+
+    if DataModule1.ZQryCustomerdiscdisc.IsNull=false then
+    CustTxtDisc.Value := DataModule1.ZQryCustomerdiscdisc.Value;
+  end;
+end;
+
+procedure Tfrmcustomerdisc.BtnAddClick(Sender: TObject);
+var
+  EmptyValue: Boolean;
+begin
+  if (custTxtKode.itemindex <= -1)or(custTxtKode.Text = '') then
+  begin
+    ErrorDialog('Kode harus diisi!');
+    custTxtKode.SetFocus;
+    Exit;
+  end;
+
+  if (custTxtnama.itemindex <= -1)or(custTxtnama.Text = '') then
+  begin
+    ErrorDialog('Nama harus diisi!');
+    custTxtNama.SetFocus;
+    Exit;
+  end;
+
+  if (custTxtmerk.itemindex <= -1)or(custTxtmerk.Text = '') then
+  begin
+    ErrorDialog('Merk harus diisi!');
+    custTxtmerk.SetFocus;
+    Exit;
+  end;
+
+  if (custTxtdisc.Value <= 0) then
+  begin
+    ErrorDialog('Diskon harus lebih besar dari 0(nol)!');
+    custTxtdisc.SetFocus;
+    Exit;
+  end;
+
+  with DataModule1.ZQrySearch do
+  begin
+    ///Check if exists
+    Close;
+    SQL.Clear;
+    SQL.Add('select id from customerdiskon');
+    SQL.Add('where IDcustomer = ' + QuotedStr(inttostr(longint(custtxtkode.Items.Objects[custtxtkode.ItemIndex]))) +' and merk = ' + QuotedStr(trim(custTxtMerk.Text)) );
+    Open;
+    EmptyValue := IsEmpty;
+  end;
+
+  if LblCaption.Caption = 'Tambah Customer Diskon' then
+  begin
+    if EmptyValue = False then
+    begin
+      InfoDialog('Kode ' + custTxtKode.Text + ' dengan Merk '+ custTxtmerk.Text +' sudah terdaftar');
+      Exit;
+    end;
+    InsertData;
+    InfoDialog('Tambah Customer Diskon berhasil');
+    LogInfo(UserName,'Insert Customer Diskon kode: ' + custTxtKode.Text + ', merk: ' + custTxtmerk.Text + ', disc: ' + floattostr(custtxtdisc.value));
+  end
+  else
+  begin
+    UpdateData;
+    InfoDialog('Edit Customer Diskon berhasil');
+    LogInfo(UserName,'Edit Customer Diskon kode: ' + custTxtKode.Text + ', merk: ' + custTxtmerk.Text + ', disc: ' + floattostr(custtxtdisc.value));
+  end;
+  Close;
+end;
+
+procedure Tfrmcustomerdisc.BtnDelClick(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure Tfrmcustomerdisc.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+ IF Frmcustomerdiscmaster=nil then
+ application.CreateForm(TFrmcustomerdiscmaster,Frmcustomerdiscmaster);
+ Frmcustomerdiscmaster.Align:=alclient;
+ Frmcustomerdiscmaster.Parent:=Self.Parent;
+ Frmcustomerdiscmaster.BorderStyle:=bsnone;
+ Frmcustomerdiscmaster.FormShowFirst;
+ Frmcustomerdiscmaster.Show;
+
+end;
+
+procedure Tfrmcustomerdisc.CustTxtkodeChange(Sender: TObject);
+begin
+ CustTxtNama.itemindex := CustTxtkode.itemindex;
+
+ CustTxtkota.Text := getdata('kota','customer where kode='+Quotedstr(CustTxtkode.Text) );
+end;
+
+procedure Tfrmcustomerdisc.CustTxtnamaChange(Sender: TObject);
+begin
+ CustTxtkode.itemindex := CustTxtnama.itemindex;
+ CustTxtkota.Text := getdata('kota','customer where kode='+Quotedstr(CustTxtkode.Text) );
+end;
+
+end.

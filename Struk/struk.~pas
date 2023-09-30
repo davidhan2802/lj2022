@@ -1,0 +1,225 @@
+unit struk;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ExtCtrls, StdCtrls, RzCmboBx, Mask, RzEdit, RzPanel,
+  AdvSmoothButton, Grids, DBGrids, RzDBGrid, RzLabel, ExtDlgs, JPEG,
+  RzButton, RzSpnEdt;
+
+type
+  Tfrmstruk = class(TForm)
+    Panel: TRzPanel;
+    RzPanel2: TRzPanel;
+    LblCaption: TRzLabel;
+    RzPanel3: TRzPanel;
+    RzLabel12: TRzLabel;
+    RzLabel14: TRzLabel;
+    BtnAdd: TAdvSmoothButton;
+    Btncancel: TAdvSmoothButton;
+    RzLabel2: TRzLabel;
+    RzLabel5: TRzLabel;
+    RzLabel6: TRzLabel;
+    edt_alamat: TRzEdit;
+    edt_company: TRzEdit;
+    edt_kota: TRzEdit;
+    RzLabel1: TRzLabel;
+    edt_cabang: TRzEdit;
+    RzLabel3: TRzLabel;
+    RzLabel4: TRzLabel;
+    RzLabel7: TRzLabel;
+    edt_footer2: TRzEdit;
+    edt_footer1: TRzEdit;
+    edt_footer3: TRzEdit;
+    RzLabel8: TRzLabel;
+    edt_footer4: TRzEdit;
+    RzLabel9: TRzLabel;
+    edt_footer5: TRzEdit;
+    Panel1: TPanel;
+    RzLabel10: TRzLabel;
+    RzLabel11: TRzLabel;
+    RzLabel13: TRzLabel;
+    edt_endfooter1: TRzEdit;
+    edt_endfooter2: TRzEdit;
+    edt_endfooter3: TRzEdit;
+    RzLabel15: TRzLabel;
+    edt_mintrans: TRzNumericEdit;
+    RzPanel1: TRzPanel;
+    spe_year: TRzSpinEdit;
+    btndelyear: TRzButton;
+    procedure BtnAddClick(Sender: TObject);
+    procedure BtncancelClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure btndelyearClick(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  frmstruk: Tfrmstruk;
+
+implementation
+
+uses SparePartFunction, Data;
+
+{$R *.dfm}
+
+procedure Tfrmstruk.BtnAddClick(Sender: TObject);
+begin
+  if trim(edt_company.Text)='' then
+  begin
+   errordialog('Perusahaan wajib diisi !');
+   exit;
+  end;
+
+  if trim(edt_alamat.Text)='' then
+  begin
+   errordialog('Alamat wajib diisi !');
+   exit;
+  end;
+
+  if trim(edt_kota.Text)='' then
+  begin
+   errordialog('Kota wajib diisi !');
+   exit;
+  end;
+
+  if trim(edt_cabang.Text)='' then
+  begin
+   errordialog('Cabang wajib diisi !');
+   exit;
+  end;
+
+  if (edt_mintrans.Value<=0)and(trim(edt_endfooter1.Text)<>'') then
+  begin
+   errordialog('Minimal transaksi belum diisi !');
+   exit;
+  end;
+
+  if (edt_mintrans.Value>0)and(trim(edt_endfooter1.Text)='') then
+  begin
+   errordialog('End Footer Baris 1 belum diisi!');
+   exit;
+  end;
+
+  if QuestionDialog('Simpan setting Struk ini?') = False then Exit;
+
+  Datamodule1.ZConnection1.ExecuteDirect('update struk set '+
+  'company='+Quotedstr(trim(edt_company.Text))+
+  ',alamat='+Quotedstr(trim(edt_alamat.Text))+
+  ',kota='+Quotedstr(trim(edt_kota.Text))+
+  ',cabang='+Quotedstr(trim(edt_cabang.Text))+
+  ',footer1='+Quotedstr(trim(edt_footer1.Text))+
+  ',footer2='+Quotedstr(trim(edt_footer2.Text))+
+  ',footer3='+Quotedstr(trim(edt_footer3.Text))+
+  ',footer4='+Quotedstr(trim(edt_footer4.Text))+
+  ',footer5='+Quotedstr(trim(edt_footer5.Text))+
+  ',mintrans='+Quotedstr(floattostr(edt_mintrans.Value))+
+  ',endfooter1='+Quotedstr(trim(edt_endfooter1.Text))+
+  ',endfooter2='+Quotedstr(trim(edt_endfooter2.Text))+
+  ',endfooter3='+Quotedstr(trim(edt_endfooter3.Text))+
+  ' where isaktif=1');
+
+  InfoDialog('Setting Struk berhasil!');
+  LogInfo(UserName,'Setting Struk '+trim(edt_cabang.Text));
+  Close;
+end;
+
+procedure Tfrmstruk.BtncancelClick(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure Tfrmstruk.FormShow(Sender: TObject);
+begin
+ Datamodule1.ZQrystruk.Close;
+ Datamodule1.ZQrystruk.Open;
+
+ edt_company.Text := '';
+ edt_alamat.Text := '';
+ edt_kota.Text := '';
+ edt_cabang.Text := '';
+
+ edt_footer1.Text := '';
+ edt_footer2.Text := '';
+ edt_footer3.Text := '';
+ edt_footer4.Text := '';
+ edt_footer5.Text := '';
+
+ edt_mintrans.Value := 0;
+
+ edt_endfooter1.Text := '';
+ edt_endfooter2.Text := '';
+ edt_endfooter3.Text := '';
+
+ if Datamodule1.ZQrystrukcompany.IsNull=false then edt_company.Text := Datamodule1.ZQrystrukcompany.AsString;
+ if Datamodule1.ZQrystrukalamat.IsNull=false then edt_alamat.Text := Datamodule1.ZQrystrukalamat.AsString;
+ if Datamodule1.ZQrystrukkota.IsNull=false then edt_kota.Text := Datamodule1.ZQrystrukkota.AsString;
+ if Datamodule1.ZQrystrukcabang.IsNull=false then edt_cabang.Text := Datamodule1.ZQrystrukcabang.AsString;
+
+ if Datamodule1.ZQrystrukfooter1.IsNull=false then edt_footer1.Text := Datamodule1.ZQrystrukfooter1.AsString;
+ if Datamodule1.ZQrystrukfooter2.IsNull=false then edt_footer2.Text := Datamodule1.ZQrystrukfooter2.AsString;
+ if Datamodule1.ZQrystrukfooter3.IsNull=false then edt_footer3.Text := Datamodule1.ZQrystrukfooter3.AsString;
+ if Datamodule1.ZQrystrukfooter4.IsNull=false then edt_footer4.Text := Datamodule1.ZQrystrukfooter4.AsString;
+ if Datamodule1.ZQrystrukfooter5.IsNull=false then edt_footer5.Text := Datamodule1.ZQrystrukfooter5.AsString;
+
+ if Datamodule1.ZQrystrukmintrans.IsNull=false then edt_mintrans.Value := Datamodule1.ZQrystrukmintrans.Value;
+
+ if Datamodule1.ZQrystrukendfooter1.IsNull=false then edt_endfooter1.Text := Datamodule1.ZQrystrukendfooter1.AsString;
+ if Datamodule1.ZQrystrukendfooter2.IsNull=false then edt_endfooter2.Text := Datamodule1.ZQrystrukendfooter2.AsString;
+ if Datamodule1.ZQrystrukendfooter3.IsNull=false then edt_endfooter3.Text := Datamodule1.ZQrystrukendfooter3.AsString;
+
+ Datamodule1.ZQrystruk.Close;
+
+end;
+
+procedure Tfrmstruk.btndelyearClick(Sender: TObject);
+var strsql : string;
+begin
+ if Questiondialog('Akan Hapus Data transaksi?')=false then exit;
+
+ strsql :=
+'CREATE DEFINER = "metabrain"@"%" PROCEDURE `cleardatayear`(IN vyear int(11)) '+
+'    NOT DETERMINISTIC ' +
+'    CONTAINS SQL ' +
+'    SQL SECURITY DEFINER ' +
+'    COMMENT "" ' +
+'BEGIN ' +
+' delete from adjustdetail where faktur in (select faktur from adjustmaster where year(tanggal)=vyear); '+
+' delete from adjustmaster where year(tanggal)=vyear; '+
+' delete from buydetail where faktur in (select faktur from buymaster where year(tanggal)=vyear); '+
+' delete from buymaster where year(tanggal)=vyear; '+
+
+' delete from inventory where year(tgltrans)=vyear; '+
+
+' delete from loginfo where year(tanggal)=vyear; '+
+' delete from operasional where year(tanggal)=vyear; '+
+
+' delete from returbelidetail where faktur in (select faktur from returbelimaster where year(tanggal)=vyear); '+
+' delete from returbelimaster where year(tanggal)=vyear; '+
+' delete from returjualdetail where faktur in (select faktur from returjualmaster where year(tanggal)=vyear); '+
+' delete from returjualmaster where year(tanggal)=vyear; '+
+' delete from selldetail where faktur in (select faktur from sellmaster where year(tanggal)=vyear); '+
+' delete from sellmaster where year(tanggal)=vyear; '+
+' delete from terimagudangdet where IDterimagudang in (select IDterimagudang from terimagudang where year(doctgl)=vyear); '+
+' delete from terimagudang where year(doctgl)=vyear; '+
+' delete from pindahgudangdet where IDpindahgudang in (select IDpindahgudang from pindahgudang where year(doctgl)=vyear); '+
+' delete from pindahgudang where year(doctgl)=vyear; '+
+' delete from diskondet where IDdiskon in (select IDdiskon from diskon where year(doctgl)=vyear); '+
+' delete from diskon where year(doctgl)=vyear; '+
+' delete from ubahhargadet where IDubahharga in (select IDubahharga from ubahharga where year(doctgl)=vyear); '+
+' delete from ubahharga where year(doctgl)=vyear; '+
+
+'END; ';
+
+ DataModule1.ZConnection1.ExecuteDirect('drop procedure `cleardatayear`;');
+ DataModule1.ZConnection1.ExecuteDirect(strsql);
+ if DataModule1.ZConnection1.ExecuteDirect('call `cleardatayear`('+inttostr(spe_year.intvalue)+')') then
+   infodialog('Berhasil hapus data transaksi')
+ else errordialog('Gagal hapus data transaksi');
+end;
+
+end.

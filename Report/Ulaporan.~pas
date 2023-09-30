@@ -1,0 +1,590 @@
+unit Ulaporan;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls, Mask, RzEdit, RzButton, RzCmboBx, RzLabel,
+  ExtCtrls, RzPanel, Dateutils, DB, strutils, DBCtrls, RzDBCmbo, RzRadChk,
+  frxClass, frxPreview, frxExportXLS, frxExportText;
+
+type
+  TFrmreport = class(TForm)
+    pnl_choosereport: TRzPanel;
+    RzLabel1: TRzLabel;
+    cbreport: TRzComboBox;
+    pnl_AccessReport: TRzPanel;
+    RzBitBtn1: TRzBitBtn;
+    RzBitBtn2: TRzBitBtn;
+    RzBitBtn3: TRzBitBtn;
+    RzBitBtn4: TRzBitBtn;
+    RzBitBtn5: TRzBitBtn;
+    RzBitBtn6: TRzBitBtn;
+    edtPageNum: TRzEdit;
+    RzBitBtn8: TRzBitBtn;
+    EdtZoom: TRzEdit;
+    RzBitBtn9: TRzBitBtn;
+    frxPreview1: TfrxPreview;
+    GB_Filter: TRzGroupBox;
+    RzLabel4: TRzLabel;
+    cb_gudang: TRzComboBox;
+    RzLabel5: TRzLabel;
+    cb_kode: TRzComboBox;
+    cb_nama: TRzComboBox;
+    RzLabel6: TRzLabel;
+    cb_nama_group: TRzComboBox;
+    cb_kode_group: TRzComboBox;
+    RzBitBtn7: TRzBitBtn;
+    lbl_periode: TRzLabel;
+    DT_Start: TRzDateTimeEdit;
+    lbl_sd: TRzLabel;
+    DT_End: TRzDateTimeEdit;
+    pnl_preview: TRzPanel;
+    BTNPREVIEW: TRzBitBtn;
+    btn_filtering: TRzBitBtn;
+    frxXLSExport1: TfrxXLSExport;
+    RzBitBtn10: TRzBitBtn;
+    frxSimpleTextExport1: TfrxSimpleTextExport;
+    procedure BTNPREVIEWClick(Sender: TObject);
+    procedure RzBitBtn5Click(Sender: TObject);
+    procedure RzBitBtn6Click(Sender: TObject);
+    procedure RzBitBtn4Click(Sender: TObject);
+    procedure RzBitBtn3Click(Sender: TObject);
+    procedure RzBitBtn2Click(Sender: TObject);
+    procedure RzBitBtn1Click(Sender: TObject);
+    procedure RzBitBtn9Click(Sender: TObject);
+    procedure RzBitBtn8Click(Sender: TObject);
+    procedure frxPreview1PageChanged(Sender: TfrxPreview; PageNo: Integer);
+    procedure cbreportChange(Sender: TObject);
+    procedure cb_kodeChange(Sender: TObject);
+    procedure cb_namaChange(Sender: TObject);
+    procedure cb_kode_groupChange(Sender: TObject);
+    procedure cb_nama_groupChange(Sender: TObject);
+    procedure RzBitBtn7Click(Sender: TObject);
+    procedure btn_filteringClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure RzBitBtn10Click(Sender: TObject);
+  private
+    { Private declarations }
+    procedure cb_productgroup_change;
+
+    procedure Report_BUKTI_MASUK_BARANG;
+    procedure Report_BUKTI_PENGAMBILAN_BARANG;
+    procedure Report_STOCK_OPNAME;
+    procedure Report_MUTASI_STOCK;
+    procedure Report_PRODUCT_URAI;
+    procedure Report_STOCK_GUDANG;
+    procedure Report_PURCHASING;
+    procedure Report_PURCHASING_PAYMENT;
+    procedure Report_SUPPLIER;
+    procedure Report_PENJUALAN;
+    procedure Report_CUSTOMER;
+    procedure Report_SELLING_PAYMENT;
+    procedure Report_ITEM;
+  public
+    { Public declarations }
+    procedure FormShowFirst;
+
+  end;
+
+var
+  Frmreport: TFrmreport;
+  mem_title: TfrxMemoView;
+
+implementation
+
+uses  ufungsi, data_module;
+
+{$R *.dfm}
+
+procedure TFrmreport.Report_BUKTI_MASUK_BARANG;
+begin
+ DM.Q_Rep_BMB.Close;
+ DM.Q_Rep_BMB.SQL.Text:= 'select i.IDin_gudang,i.bmb_no,i.date_in,i.person,i.invoice_no,s.last_name nmsupplier,i.terms_of_payment,i.total_purchase,g.nama nmgudang,p.kode,p.nama,t.qty,t.disc,t.price,t.total_price,t.keterangan from in_gudang_det t '+
+                         'left join product p on t.IDproduct=p.IDproduct '+
+                         'left join in_gudang i on t.IDin_gudang=i.IDin_gudang '+
+                         'left join gudang g on i.IDgudang=g.IDgudang '+
+                         'left join supplier s on i.IDsupplier=s.IDsupplier '+
+                         'where i.is_posted=1 and i.date_in between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+                         'order by i.bmb_no,p.kode ';
+
+ DM.Q_Rep_BMB.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_bmb.fr3');
+
+ mem_title:= TfrxMemoView(DM.frxRep.FindObject('Mem_title'));
+ mem_title.Memo.Text:= 'DAFTAR BUKTI MASUK BARANG (BMB PERIODE '+FormatDateTime('dd/mm/yyyy',DT_Start.Date)+' s/d '+FormatDateTime('dd/mm/yyyy',DT_End.Date)+')';
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_BMB.Close;
+end;
+
+procedure TFrmreport.Report_BUKTI_PENGAMBILAN_BARANG;
+begin
+ DM.Q_Rep_BPB.Close;
+ DM.Q_Rep_BPB.SQL.Text:='select o.IDout_gudang,o.bpb_no,o.date_out,o.client,g.nama nmgudang,p.kode,p.nama,t.qty,f.nama nmfunc,t.keterangan from out_gudang_det t '+
+                        'left join product p on t.IDproduct=p.IDproduct '+
+                        'left join out_gudang_func f on t.IDout_gudang_func=f.IDout_gudang_func '+
+                        'left join out_gudang o on t.IDout_gudang=o.IDout_gudang '+
+                        'left join gudang g on o.IDgudang=g.IDgudang '+
+                        'where o.is_posted=1 and o.date_out between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+                        'order by o.bpb_no,p.kode ';
+
+ DM.Q_Rep_BPB.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_bpb.fr3');
+
+ mem_title:= TfrxMemoView(DM.frxRep.FindObject('Mem_title'));
+ mem_title.Memo.Text:= 'DAFTAR BUKTI PENGAMBILAN BARANG (BPB PERIODE '+FormatDateTime('dd/mm/yyyy',DT_Start.Date)+' s/d '+FormatDateTime('dd/mm/yyyy',DT_End.Date)+')';
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_BPB.Close;
+end;
+
+procedure TFrmreport.Report_STOCK_OPNAME;
+begin
+ DM.Q_Rep_Stock_opname.Close;
+ DM.Q_Rep_Stock_opname.SQL.Text :='select s.IDstockopname,s.no_stockopname,s.tgl,s.person,g.nama nmgudang,p.kode,p.nama,t.qtybuku,t.qtygudang,t.keterangan from stock_opname_det t '+
+                                  'left join product p on t.IDproduct=p.IDproduct '+
+                                  'left join stock_opname s on t.IDstock_opname=s.IDstockopname '+
+                                  'left join gudang g on s.IDgudang=g.IDgudang '+
+                                  'where s.posted=1 and s.tgl between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+                                  'order by s.no_stockopname,p.kode ';
+
+ DM.Q_Rep_Stock_opname.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_so.fr3');
+
+ mem_title:= TfrxMemoView(DM.frxRep.FindObject('Mem_title'));
+ mem_title.Memo.Text:= 'DAFTAR STOCK OPNAME (SO PERIODE '+FormatDateTime('dd/mm/yyyy',DT_Start.Date)+' s/d '+FormatDateTime('dd/mm/yyyy',DT_End.Date)+')';
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_Stock_opname.Close;
+end;
+
+procedure TFrmreport.Report_MUTASI_STOCK;
+var strproduct: string;
+begin
+ strproduct:='';
+ if GB_Filter.Visible then
+ begin
+  if cb_kode.ItemIndex>0 then strproduct:='and t.IDproduct='+inttostr(longint(cb_kode.Items.Objects[cb_kode.ItemIndex]))+' '
+  else if (cb_kode.ItemIndex=0)and(cb_kode_group.ItemIndex>0) then strproduct:='and p.IDproduct_group='+inttostr(longint(cb_kode_group.Items.Objects[cb_kode_group.ItemIndex]))+' ';
+ end;
+
+ DM.Q_Rep_Mutasi_Stock.Close;
+ DM.Q_Rep_Mutasi_Stock.SQL.Text :='select 0 grp,"SALDO" nobukti,null Tgl,p.kode,p.nama,sum(ifnull(t.qtyin,0)-ifnull(t.qtyout,0)) qty,null keterangan,t.IDproduct from product_stock t '+
+ 'left join product p on t.IDproduct=p.IDproduct '+
+ 'where t.Tgl<:date_start and t.IDgudang=:IDgudang '+ strproduct +
+ 'group by t.IDproduct '+
+ 'union '+
+ 'select 1 grp,concat("BMB - ",i.bmb_no) nobukti,i.date_in Tgl,p.kode,p.nama,t.qty,t.keterangan,t.IDproduct from in_gudang_det t '+
+ 'left join in_gudang i on t.IDin_gudang=i.IDin_gudang '+
+ 'left join product p on t.IDproduct=p.IDproduct '+
+ 'where i.IDgudang=:IDgudang and i.is_posted=1 '+strproduct+'and i.date_in between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+ 'union '+
+ 'select 2 grp,concat("BPB - ",o.bpb_no) nobukti,o.date_out Tgl,p.kode,p.nama,(-t.qty) qty,f.nama keterangan,t.IDproduct from out_gudang_det t '+
+ 'left join out_gudang o on t.IDout_gudang=o.IDout_gudang '+
+ 'left join product p on t.IDproduct=p.IDproduct '+
+ 'left join out_gudang_func f on t.IDout_gudang_func=f.IDout_gudang_func '+
+ 'where o.IDgudang=:IDgudang and o.is_posted=1 '+strproduct+'and o.date_out between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+ 'union '+
+ 'select 6 grp,concat("BPB - ",o.bpb_no) nobukti,o.date_out Tgl,p.kode,p.nama,t.qty,f.nama keterangan,t.IDproduct from out_gudang_det t '+
+ 'left join out_gudang o on t.IDout_gudang=o.IDout_gudang '+
+ 'left join product p on t.IDproduct=p.IDproduct '+
+ 'left join out_gudang_func f on t.IDout_gudang_func=f.IDout_gudang_func '+
+ 'where t.IDout_gudang_func=7 and o.is_posted=1 '+strproduct+'and o.date_out between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+ 'union '+
+ 'select 3 grp,concat("SO - ",s.no_stockopname) nobukti,s.Tgl,p.kode,p.nama,t.qtygudang-t.qtybuku qty,t.keterangan,t.IDproduct from stock_opname_det t '+
+ 'left join stock_opname s on t.IDstock_opname=s.IDstockopname '+
+ 'left join product p on t.IDproduct=p.IDproduct '+
+ 'where s.IDgudang=:IDgudang and s.posted=1 '+strproduct+'and s.Tgl between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+ 'union '+
+ 'select 4 grp,concat("PU - ",u.pug_no) nobukti,u.tgl,p.kode,p.nama,-1 qty,"Diurai " keterangan,t.IDproduct from product_urai_gudang_det t '+
+ 'left join product_urai_gudang u on t.IDproduct_urai_gudang=u.IDproduct_urai_gudang '+
+ 'left join product p on t.IDproduct=p.IDproduct '+
+ 'where u.IDgudang=:IDgudang and u.is_posted=1 '+strproduct+'and u.tgl between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+ 'union '+
+ 'select 5 grp,concat("PU - ",u.pug_no) nobukti,u.tgl,p.kode,p.nama,t.qty,"Hasil Urai" keterangan,t.IDproduct from product_urai_gudang_det t '+
+ 'left join product_urai_gudang u on t.IDproduct_urai_gudang=u.IDproduct_urai_gudang '+
+ 'left join product p on t.IDproduct_dest=p.IDproduct '+
+ 'where u.IDgudang=:IDgudang and u.is_posted=1 '+strproduct+'and u.tgl between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" ';
+ DM.Q_Rep_Mutasi_Stock.Params[0].Asdatetime:=DT_Start.Date;
+ DM.Q_Rep_Mutasi_Stock.Params[1].AsInteger:=Longint(cb_gudang.Items.Objects[cb_gudang.ItemIndex]);
+ DM.Q_Rep_Mutasi_Stock.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_mutasi_stock.fr3');
+
+ mem_title:= TfrxMemoView(DM.frxRep.FindObject('Mem_title'));
+ mem_title.Memo.Text:= 'MUTASI STOCK GUDANG '+cb_gudang.Text+' (PERIODE '+FormatDateTime('dd/mm/yyyy',DT_Start.Date)+' s/d '+FormatDateTime('dd/mm/yyyy',DT_End.Date)+')';
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_Mutasi_Stock.Close;
+end;
+
+procedure TFrmreport.Report_PRODUCT_URAI;
+begin
+ DM.Q_Rep_product_urai.Close;
+ DM.Q_Rep_product_urai.SQL.Text:='select u.IDproduct_urai_gudang,u.pug_no,u.tgl,u.person,g.nama nmgudang,concat("[",p.kode,"]  ",p.nama) product_asal,t.qty,concat("[",pd.kode,"]  ",pd.nama) product_dest from product_urai_gudang_det t '+
+                                 'left join product p on t.IDproduct=p.IDproduct '+
+                                 'left join product pd on t.IDproduct_dest=pd.IDproduct '+
+                                 'left join product_urai_gudang u on t.IDproduct_urai_gudang=u.IDproduct_urai_gudang '+
+                                 'left join gudang g on u.IDgudang=g.IDgudang '+
+                                 'where u.is_posted=1 and u.tgl between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" '+
+                                 'order by u.pug_no,p.kode ';
+
+ DM.Q_Rep_product_urai.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_product_urai.fr3');
+
+ mem_title:= TfrxMemoView(DM.frxRep.FindObject('Mem_title'));
+ mem_title.Memo.Text:= 'DAFTAR PENGURAIAN PRODUCT (PUG PERIODE '+FormatDateTime('dd/mm/yyyy',DT_Start.Date)+' s/d '+FormatDateTime('dd/mm/yyyy',DT_End.Date)+')';
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_product_urai.Close;
+end;
+
+procedure TFrmreport.Report_STOCK_GUDANG;
+var strcond,strcond2: string;
+begin
+ strcond:='and s.IDgudang>0 '; strcond2:='';
+ if GB_Filter.Visible then
+ begin
+  if cb_gudang.ItemIndex>0 then strcond:='and s.IDgudang='+inttostr(longint(cb_gudang.Items.Objects[cb_gudang.ItemIndex]))+' ';
+  if cb_kode.ItemIndex>0 then strcond2:='and s.IDproduct='+inttostr(longint(cb_kode.Items.Objects[cb_kode.ItemIndex]))+' '
+  else if (cb_kode.ItemIndex=0)and(cb_kode_group.ItemIndex>0) then strcond2:='and p.IDproduct_group='+inttostr(longint(cb_kode_group.Items.Objects[cb_kode_group.ItemIndex]))+' ';
+ end;
+
+ DM.Q_Rep_stock.Close;
+ DM.Q_Rep_stock.SQL.Text:='select p.IDproduct,p.kode,p.nama,p.unit,sum(ifnull(s.qtyin,0)-ifnull(s.qtyout,0)) qtytotal,g.nama nmproductgroup from product_stock s '+
+                          'left join product p on s.IDproduct=p.IDproduct left join product_group g on p.IDproduct_group=g.IDproduct_group '+
+                          'where s.Tgl<"'+DM.getMySQLDateStr(incday(DT_End.Date))+' 00:00:00" '+strcond+strcond2+
+                          'group by p.IDproduct order by g.nama,p.kode';
+ DM.Q_Rep_stock.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_stock_gudang.fr3');
+
+ mem_title:= TfrxMemoView(DM.frxRep.FindObject('Mem_title'));
+ mem_title.Memo.Text:= 'STOCK GUDANG '+cb_gudang.Text+' S/D TANGGAL '+FormatDateTime('dd/mm/yyyy',DT_End.Date);
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_stock.Close;
+end;
+
+procedure TFrmreport.Report_PURCHASING;
+begin
+ DM.Q_Rep_purchasing.Close;
+ DM.Q_Rep_purchasing.Params[0].AsDate:= DT_start.Date;
+ DM.Q_Rep_purchasing.Params[1].AsDate:= DT_end.Date;
+ DM.Q_Rep_purchasing.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_purchasing.fr3');
+
+{ mem_title:= TfrxMemoView(DM.frxRep.FindObject('Mem_title'));
+ mem_title.Memo.Text:= 'DAFTAR PENGURAIAN PRODUCT (PUG PERIODE '+FormatDateTime('dd/mm/yyyy',DT_Start.Date)+' s/d '+FormatDateTime('dd/mm/yyyy',DT_End.Date)+')';
+ }
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_purchasing.Close;
+end;
+
+procedure TFrmreport.Report_PURCHASING_PAYMENT;
+begin
+ DM.Q_Rep_purchasing_payment.Close;
+// DM.Q_Rep_purchasing_payment.Params[0].AsDate:= DT_start.Date;
+// DM.Q_Rep_purchasing_payment.Params[1].AsDate:= DT_end.Date;
+ DM.Q_Rep_purchasing_payment.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_purchasing_payment.fr3');
+
+{ mem_title:= TfrxMemoView(DM.frxRep.FindObject('Mem_title'));
+ mem_title.Memo.Text:= 'DAFTAR PENGURAIAN PRODUCT (PUG PERIODE '+FormatDateTime('dd/mm/yyyy',DT_Start.Date)+' s/d '+FormatDateTime('dd/mm/yyyy',DT_End.Date)+')';
+ }
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_purchasing_payment.Close;
+end;
+
+procedure TFrmreport.Report_SUPPLIER;
+var strqry:string;
+begin
+ strqry:='';
+ if DT_start.Date>DT_end.Date then
+ begin
+  showmessage('Tanggal On(yang dituju) tidak boleh lebih kecil dari Tanggal Start-nya!');
+  exit;
+ end;
+ if DT_start.Date<DT_end.Date then
+    strqry:='and (i.IDsupplier not in (select IDsupplier from in_gudang where is_posted=1 and cast(date_in as date) between "'+DM.getMySQLDateStr(DT_start.Date)+'" and "'+DM.getMySQLDateStr(incday(DT_end.Date,-1))+'"))';
+ DM.Q_Rep_supplier.Close;
+ DM.Q_Rep_supplier.SQL.Text := 'select s.* from in_gudang i left join supplier s on i.IDsupplier=s.IDsupplier where (cast(i.date_in as date)="'+DM.getMySQLDateStr(DT_end.Date)+'") and (i.is_posted=1) '+strqry+' group by i.IDsupplier order by s.last_name';
+ DM.Q_Rep_supplier.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_supplier.fr3');
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_supplier.Close;
+end;
+
+procedure TFrmreport.Report_PENJUALAN;
+begin
+ DM.Q_Rep_selling.Close;
+ DM.Q_Rep_selling.SQL.Text:= 'select * from v_selling_service_product where Tgl between "'+DM.getMySQLDateStr(DT_start.Date)+' 00:00:00" and "'+DM.getMySQLDateStr(incday(DT_end.Date))+' 00:00:00" order by IDselling_retail,kode';
+ DM.Q_Rep_selling.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_selling.fr3');
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_selling.Close;
+end;
+
+procedure TFrmreport.Report_CUSTOMER;
+var strqry:string;
+begin
+ strqry:='';
+ if DT_start.Date>DT_end.Date then
+ begin
+  showmessage('Tanggal On(yang dituju) tidak boleh lebih kecil dari Tanggal Start-nya!');
+  exit;
+ end;
+ if DT_start.Date<DT_end.Date then
+    strqry:='and (s.IDclient not in (select IDclient from selling_retail where posted=1 and cast(Tgl_Jam as date) between "'+DM.getMySQLDateStr(DT_start.Date)+'" and "'+DM.getMySQLDateStr(incday(DT_end.Date,-1))+'"))';
+ DM.Q_Rep_client.Close;
+ DM.Q_Rep_client.SQL.Text:='select c.* from selling_retail s left join client c on s.IDclient=c.IDclient where (cast(s.Tgl_Jam as date)="'+DM.getMySQLDateStr(DT_end.Date)+'") and (s.posted=1) '+strqry+' group by s.IDclient order by c.nama';
+ DM.Q_Rep_client.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_client.fr3');
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_client.Close;
+end;
+
+procedure TFrmreport.Report_ITEM;
+var strqryp,strqrys:string;
+begin
+ strqryp:='';
+ strqrys:='';
+ if DT_start.Date>DT_end.Date then
+ begin
+  showmessage('Tanggal On(yang dituju) tidak boleh lebih kecil dari Tanggal Start-nya!');
+  exit;
+ end;
+ if DT_start.Date<DT_end.Date then
+ begin
+  strqryp:='and (r.IDproduct not in (select d.IDproduct from selling_retail_product d left join selling_retail a on d.IDselling_retail=a.IDselling_retail where a.posted=1 and cast(a.Tgl_Jam as date) between "'+DM.getMySQLDateStr(DT_start.Date)+'" and "'+DM.getMySQLDateStr(incday(DT_end.Date,-1))+'"))';
+  strqrys:='and (e.IDservice not in (select d.IDservice from selling_retail_service d left join selling_retail a on d.IDselling_retail=a.IDselling_retail where a.posted=1 and cast(a.Tgl_Jam as date) between "'+DM.getMySQLDateStr(DT_start.Date)+'" and "'+DM.getMySQLDateStr(incday(DT_end.Date,-1))+'"))';
+ end;
+
+ DM.Q_Rep_item.Close;
+ DM.Q_Rep_item.SQL.text := 'select p.kode,p.nama,p.asset_acct,p.income_acct,p.cos_acct,"B" Buy,"S" Sell,"I" Inventory from selling_retail_product r '+
+                           'left join selling_retail s on r.IDselling_retail=s.IDselling_retail left join product p on r.IDproduct=p.IDproduct where (cast(s.Tgl_Jam as date)="'+DM.getMySQLDateStr(DT_end.Date)+'") and (s.posted=1) '+strqryp+' group by r.IDproduct '+
+                           'union select v.kode,v.nama,v.asset_acct,v.income_acct,v.cos_acct,"" Buy,"S" Sell,"" Inventory from selling_retail_service e '+
+                           'left join selling_retail s on e.IDselling_retail=s.IDselling_retail left join service v on e.IDservice=v.IDservice where (cast(s.Tgl_Jam as date)="'+DM.getMySQLDateStr(DT_end.Date)+'") and (s.posted=1) '+strqrys+' group by e.IDservice ';
+ DM.Q_Rep_item.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_item.fr3');
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_item.Close;
+end;
+
+procedure TFrmreport.Report_SELLING_PAYMENT;
+begin
+ DM.Q_Rep_selling_payment.Params[0].AsDate:= DT_Start.Date;
+ DM.Q_Rep_selling_payment.Params[1].AsDate:= DT_End.Date;
+ DM.Q_Rep_selling_payment.Close;
+ DM.Q_Rep_selling_payment.Open;
+ DM.frxRep.Preview:= frxpreview1;
+ DM.frxRep.LoadFromFile(Path+'Report\rep_selling_payment.fr3');
+
+ DM.frxRep.ShowReport();
+ DM.Q_Rep_selling_payment.Close;
+end;
+
+procedure TFrmreport.BTNPREVIEWClick(Sender: TObject);
+begin
+ frxPreview1.Zoom := 100.00;
+
+ case cbReport.ItemIndex of
+  0 : Report_BUKTI_MASUK_BARANG;
+  1 : Report_BUKTI_PENGAMBILAN_BARANG;
+  2 : Report_STOCK_OPNAME;
+  3 : Report_PRODUCT_URAI;
+  4 : Report_MUTASI_STOCK;
+  5 : Report_STOCK_GUDANG;
+  6 : Report_PURCHASING;
+  7 : Report_PURCHASING_PAYMENT;
+  8 : Report_SUPPLIER;
+  9 : Report_PENJUALAN;
+  10 : Report_CUSTOMER;
+  11 : Report_SELLING_PAYMENT;
+  12 : Report_ITEM;
+ end;
+
+ GB_Filter.Visible:=false;
+end;
+
+procedure TFrmreport.RzBitBtn5Click(Sender: TObject);
+begin
+  frxPreview1.Next;
+end;
+
+procedure TFrmreport.RzBitBtn6Click(Sender: TObject);
+begin
+ frxPreview1.Last;
+end;
+
+procedure TFrmreport.RzBitBtn4Click(Sender: TObject);
+begin
+  frxPreview1.Prior;
+end;
+
+procedure TFrmreport.RzBitBtn3Click(Sender: TObject);
+begin
+   frxPreview1.First;
+end;
+
+procedure TFrmreport.RzBitBtn2Click(Sender: TObject);
+begin
+   frxPreview1.Zoom := frxPreview1.Zoom-0.2;
+
+ EdtZoom.Text := FloatToStr(frxPreview1.Zoom*100)+'%';
+end;
+
+procedure TFrmreport.RzBitBtn1Click(Sender: TObject);
+begin
+  frxPreview1.Zoom := frxPreview1.Zoom+0.2;
+
+ EdtZoom.Text := FloatToStr(frxPreview1.Zoom*100)+'%';
+end;
+
+procedure TFrmreport.RzBitBtn9Click(Sender: TObject);
+begin
+ frxPreview1.Print;
+end;
+
+procedure TFrmreport.RzBitBtn8Click(Sender: TObject);
+begin
+ frxPreview1.Export(frxXLSExport1);
+end;
+
+procedure TFrmreport.frxPreview1PageChanged(Sender: TfrxPreview;
+  PageNo: Integer);
+begin
+  edtPageNum.Text := inttostr(PageNo);
+ EdtZoom.Text := floatToStr(frxPreview1.Zoom*100)+'%';
+{ RzStatusPane1.Caption := 'Halaman ke '+inttostr(PageNo)+
+  ' dari '+inttostr(frxPreview1.AllPages)+' halaman'; }
+end;
+
+procedure TFrmreport.FormShowFirst;
+var thism: TDate;
+begin
+
+ thism:= DM.getNow;
+ DT_Start.Date:= thism;
+ DT_End.Date:= thism;
+
+ cbreport.ItemIndex:=0;
+ cbreportchange(cbreport);
+end;
+
+procedure TFrmreport.cbreportChange(Sender: TObject);
+begin
+ lbl_periode.Caption := 'Periode';
+ lbl_sd.Caption      := 's/d';
+
+ DT_start.Enabled:=true;
+ DT_Start.Visible:=true;
+ DT_End.Visible:=true;
+ lbl_sd.visible:=true;
+
+ if cbreport.ItemIndex=4 then
+    DM.Fill_ComboBox_with_Data_n_ID(cb_gudang,'select IDgudang,nama from gudang where IDgudang>0 order by IDgudang','nama','IDgudang')
+ else DM.Fill_ComboBox_with_Data_n_ID(cb_gudang,'select IDgudang,nama from gudang order by IDgudang','nama','IDgudang',true);
+// else DM.Fill_ComboBox_with_Data_n_ID(cb_gudang,'select IDgudang,nama from gudang where IDgudang>0 order by IDgudang','nama','IDgudang',true);
+
+ pnl_AccessReport.Enabled:=cbreport.ItemIndex>-1;
+
+ btn_Filtering.Visible:=false;
+ GB_Filter.Visible:=false;
+
+ lbl_periode.Visible:=true;
+ DT_Start.Visible:=true;
+
+ case cbReport.ItemIndex of
+ 4: btn_Filtering.Visible:=true;
+ 5: begin
+     lbl_periode.Visible:=false;
+     DT_Start.Visible:=false;
+
+     btn_Filtering.Visible:=true;
+    end;
+ 8,10,12: begin
+      DT_start.Date:=strtodate('01/02/2011');
+      DT_start.Enabled:=false;
+      lbl_periode.Caption := 'Start';
+      lbl_sd.Caption      := 'On';
+
+     end;
+ end;
+
+end;
+
+procedure TFrmreport.cb_kodeChange(Sender: TObject);
+begin
+ cb_nama.ItemIndex:= cb_kode.ItemIndex;
+end;
+
+procedure TFrmreport.cb_namaChange(Sender: TObject);
+begin
+ cb_kode.ItemIndex:= cb_nama.ItemIndex;
+end;
+
+procedure TFrmreport.cb_productgroup_change;
+var strcond: string;
+begin
+ strcond:='';
+ if cb_kode_group.ItemIndex>0 then strcond:='where IDproduct_group='+inttostr(longint(cb_kode_group.Items.Objects[cb_kode_group.ItemIndex]))+' ';
+ DM.Fill_ComboBox_with_Data_n_ID(cb_kode,'select IDproduct,kode from product '+strcond+'order by kode','kode','IDproduct',true);
+ DM.Fill_ComboBox_with_Data_n_ID(cb_nama,'select IDproduct,nama from product '+strcond+'order by kode','nama','IDproduct',true);
+end;
+
+procedure TFrmreport.cb_kode_groupChange(Sender: TObject);
+begin
+ cb_nama_group.ItemIndex:= cb_kode_group.ItemIndex;
+
+ cb_productgroup_change;
+end;
+
+procedure TFrmreport.cb_nama_groupChange(Sender: TObject);
+begin
+ cb_kode_group.ItemIndex:= cb_nama_group.ItemIndex;
+
+ cb_productgroup_change;
+end;
+
+procedure TFrmreport.RzBitBtn7Click(Sender: TObject);
+begin
+ GB_Filter.Visible:=false;
+end;
+
+procedure TFrmreport.btn_filteringClick(Sender: TObject);
+begin
+ GB_Filter.Visible:=true;
+
+ DM.Fill_ComboBox_with_Data_n_ID(cb_kode_group,'select IDproduct_group,kode from product_group order by kode','kode','IDproduct_group',true);
+ DM.Fill_ComboBox_with_Data_n_ID(cb_nama_group,'select IDproduct_group,nama from product_group order by kode','nama','IDproduct_group',true);
+ cb_productgroup_change;
+end;
+
+procedure TFrmreport.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+ if DM.frxRep.Preview=frxPreview1 then frxPreview1.Clear;
+end;
+
+procedure TFrmreport.RzBitBtn10Click(Sender: TObject);
+begin
+// frxPreview1.Export(frxTXTExport1);
+ frxPreview1.Export(frxSimpleTextExport1);
+end;
+
+end.
